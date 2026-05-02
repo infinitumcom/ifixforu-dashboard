@@ -1732,9 +1732,9 @@
 // CONFIG
 // ============================================================
 const CONFIG = {
-  API_BASE: 'http://localhost:8889',
+  API_BASE: '',
   STORE_CODE: 'san_gabriel',
-  REFRESH_INTERVAL: 60000,
+  REFRESH_INTERVAL: 15000,
   BOTTOM_ROTATE_INTERVAL: 10000,
   QUOTA_SPLIT: { repair: 0.35, activation: 0.35, accessory: 0.20, sales: 0.10 }
 };
@@ -2028,6 +2028,8 @@ async function loadData() {
     merged.rankings = live.rankings;
     merged.month_champion = live.month_champion;
     if (live.employee_rankings) merged.employee_rankings = live.employee_rankings;
+    if (live.items && live.items.length > 0) merged.items = live.items;
+    if (live.notices && live.notices.length > 0) merged.notices = live.notices;
 
     // Inject today's schedule into shift data
     const todayStaff = getTodaySchedule(CONFIG.STORE_CODE);
