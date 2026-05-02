@@ -1,0 +1,13 @@
+[Unit]
+Description=Dashboard Telegram Bot
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/dashboard
+ExecStart=/opt/dashboard-venv/bin/python /opt/dashboard/dashboard_bot.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
