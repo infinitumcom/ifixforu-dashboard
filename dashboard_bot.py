@@ -48,11 +48,13 @@ TYPE_LABELS = {
 SEND_MAX_RETRIES = 3
 
 
-async def send_message(chat_id: str | int, text: str, reply_to: int = None) -> bool:
+async def send_message(chat_id: str | int, text: str, reply_to: int = None, reply_markup: dict = None) -> bool:
     """发送 Telegram 消息，失败重试。"""
     payload = {"chat_id": str(chat_id), "text": text}
     if reply_to:
         payload["reply_to_message_id"] = reply_to
+    if reply_markup:
+        payload["reply_markup"] = json.dumps(reply_markup)
 
     for attempt in range(SEND_MAX_RETRIES):
         try:
@@ -70,6 +72,30 @@ async def send_message(chat_id: str | int, text: str, reply_to: int = None) -> b
         if attempt < SEND_MAX_RETRIES - 1:
             await asyncio.sleep(2 * (attempt + 1))
     return False
+
+
+async def answer_callback(callback_query_id: str, text: str = "") -> None:
+    """应答 callback query（消除按钮加载状态）"""
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(f"{TELEGRAM_API}/answerCallbackQuery", json={
+                "callback_query_id": callback_query_id,
+                "text": text,
+            }, timeout=10)
+    except Exception as e:
+        logger.error("answerCallback 异常: %s", e)
+
+
+async def edit_message(chat_id: str | int, message_id: int, text: str, reply_markup: dict = None) -> None:
+    """编辑已发送的消息"""
+    payload = {"chat_id": str(chat_id), "message_id": message_id, "text": text}
+    if reply_markup:
+        payload["reply_markup"] = json.dumps(reply_markup)
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(f"{TELEGRAM_API}/editMessageText", json=payload, timeout=10)
+    except Exception as e:
+        logger.error("editMessage 异常: %s", e)
 
 
 # ── 命令处理 ─────────────────────────────────────────────────
@@ -112,8 +138,8 @@ async def cmd_list(chat_id: str) -> None:
     lines = [f"📋 今日看板 — {date.today().isoformat()} ({len(items)}项)", ""]
     for item in items:
         urgent = "🔴 " if item.get("urgent") else ""
-        time_str = f" ⏰{item['time']}" if item.get("time") else ""
-        lines.append(f"#{item['id']} {urgent}{item['emoji']} {item['content']}{time_str}")
+        time_str = f" ⏰{item['due_time']}" if item.get("due_time") else ""
+        lines.append(f"#{item['id']} {urgent}{item['display_emoji']} {item['content']}{time_str}")
 
     await send_message(chat_id, "\n".join(lines))
 
@@ -127,7 +153,7 @@ async def cmd_notices(chat_id: str) -> None:
 
     lines = ["📢 当前公告:", ""]
     for n in notices:
-        lines.append(f"#{n['id']} {n['emoji']} {n['content']}")
+        lines.append(f"#{n['id']} {n['display_emoji']} {n['content']}")
 
     await send_message(chat_id, "\n".join(lines))
 
@@ -148,10 +174,58 @@ async def cmd_help(chat_id: str) -> None:
     await send_message(chat_id, text)
 
 
+# ── Inline 按钮处理 ──────────────────────────────────────────
+
+def make_done_button(item_id: int) -> dict:
+    """生成 '✅ 完成' 和 '🗑 删除' inline 按钮"""
+    return {
+        "inline_keyboard": [[
+            {"text": "✅ 完成", "callback_data": f"done:{item_id}"},
+            {"text": "🗑 删除", "callback_data": f"del:{item_id}"},
+        ]]
+    }
+
+
+async def handle_callback(callback_query: dict) -> None:
+    """处理 inline 按钮点击"""
+    cb_id = callback_query.get("id", "")
+    data = callback_query.get("data", "")
+    msg = callback_query.get("message", {})
+    chat_id = str(msg.get("chat", {}).get("id", ""))
+    message_id = msg.get("message_id")
+    from_user = callback_query.get("from", {})
+    sender_name = from_user.get("first_name", "")
+    if from_user.get("last_name"):
+        sender_name += " " + from_user["last_name"]
+    sender_name = sender_name.strip() or "Unknown"
+
+    if data.startswith("done:"):
+        item_id = int(data.split(":")[1])
+        if mark_done(item_id, sender_name):
+            await answer_callback(cb_id, f"#{item_id} 已完成!")
+            # 更新原消息，去掉按钮，加上完成标记
+            old_text = msg.get("text", "")
+            await edit_message(chat_id, message_id, old_text + f"\n\n✅ 已完成 (by {sender_name})")
+        else:
+            await answer_callback(cb_id, f"#{item_id} 未找到或已完成")
+
+    elif data.startswith("del:"):
+        item_id = int(data.split(":")[1])
+        if delete_item(item_id):
+            await answer_callback(cb_id, f"#{item_id} 已删除!")
+            old_text = msg.get("text", "")
+            await edit_message(chat_id, message_id, old_text + f"\n\n🗑 已删除 (by {sender_name})")
+        else:
+            await answer_callback(cb_id, f"#{item_id} 未找到")
+
+    else:
+        await answer_callback(cb_id)
+
+
 # ── 自然语言消息处理 ─────────────────────────────────────────
 
 async def handle_natural_message(chat_id: str, msg_id: int, text: str, sender_name: str) -> None:
-    """自然语言消息 → 分类 → 存储 → 回复确认"""
+    """自然语言消息 → 分类 → 存储 → 回复确认（带完成按钮）"""
     result = classify_message(text, sender_name)
 
     # 跳过非工作内容
@@ -185,6 +259,7 @@ async def handle_natural_message(chat_id: str, msg_id: int, text: str, sender_na
             chat_id,
             f"✅ 看板已更新 #{item_id}: {label} {result.get('content', '')}{time_tag}{urgent_tag}",
             reply_to=msg_id,
+            reply_markup=make_done_button(item_id),
         )
 
 
@@ -252,6 +327,12 @@ async def poll_updates() -> None:
 
                 for update in updates:
                     offset = update["update_id"] + 1
+
+                    # 处理 inline 按钮回调
+                    if "callback_query" in update:
+                        asyncio.create_task(handle_callback(update["callback_query"]))
+                        continue
+
                     msg = update.get("message", {})
                     chat = msg.get("chat", {})
                     chat_id = str(chat.get("id", ""))

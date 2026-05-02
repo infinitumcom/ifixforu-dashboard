@@ -216,16 +216,16 @@ def item_to_api_format(row) -> dict:
         "type": r["type"],
         "label": TYPE_LABELS.get(r["type"], r["type"]),
         "content": r["content"],
-        "emoji": r["display_emoji"],
+        "display_emoji": r["display_emoji"],
         "status": r["status"],
         "urgent": bool(r.get("urgent")),
-        "creator": r.get("creator_name", ""),
+        "creator_name": r.get("creator_name", ""),
         "created_at": r.get("created_at", ""),
     }
     if r.get("due_time"):
-        result["time"] = r["due_time"]
+        result["due_time"] = r["due_time"]
     if r.get("due_date"):
-        result["date"] = r["due_date"]
+        result["due_date"] = r["due_date"]
     if meta:
         result["meta"] = meta
     return result
