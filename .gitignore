@@ -1,0 +1,14 @@
+.env
+*.db
+*.db-shm
+*.db-wal
+*.log
+__pycache__/
+*.pyc
+.DS_Store
+
+# Android build
+firetv-app/.gradle/
+firetv-app/build/
+firetv-app/app/build/
+firetv-app/local.properties

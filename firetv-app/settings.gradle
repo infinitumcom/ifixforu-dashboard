@@ -1,0 +1,2 @@
+rootProject.name = 'iFixForU Dashboard'
+include ':app'

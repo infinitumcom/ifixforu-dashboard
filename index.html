@@ -1,0 +1,3038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>iFixForU Operations Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0a1628;
+    --bg-secondary: #0f1f3a;
+    --bg-tertiary: #152a4a;
+    --bg-card: #1a3358;
+    --bg-elevated: #214477;
+
+    --brand-blue: #2D8FFF;
+    --brand-blue-light: #5BAEFF;
+    --brand-blue-glow: rgba(45, 143, 255, 0.4);
+    --brand-blue-deep: #1a6fd6;
+
+    --accent-cyan: #00d4ff;
+    --accent-cyan-glow: rgba(0, 212, 255, 0.35);
+    --accent-green: #2ee885;
+    --accent-yellow: #ffc933;
+    --accent-orange: #ff8a3d;
+    --accent-red: #ff5577;
+    --accent-purple: #a855f7;
+
+    --text-primary: #f0f6ff;
+    --text-secondary: #8aa3c7;
+    --text-tertiary: #5a7099;
+    --text-dim: #3d5278;
+
+    --border-subtle: rgba(91, 174, 255, 0.08);
+    --border-medium: rgba(91, 174, 255, 0.18);
+    --border-brand: rgba(45, 143, 255, 0.35);
+
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'Space Grotesk', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    cursor: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  body {
+    background:
+      radial-gradient(ellipse at top left, rgba(45, 143, 255, 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at bottom right, rgba(0, 212, 255, 0.15) 0%, transparent 55%),
+      linear-gradient(135deg, #0f2447 0%, #0a1628 50%, #081222 100%);
+    background-attachment: fixed;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(circle at 50% 30%, rgba(45, 143, 255, 0.08) 0%, transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.06) 0%, transparent 35%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(91, 174, 255, 0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(91, 174, 255, 0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100vh;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 20px;
+    overflow: hidden;
+  }
+
+  /* ============================================================
+     1. HEADER
+     ============================================================ */
+  .header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    padding: 8px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  .brand { display: flex; align-items: center; gap: 12px; }
+
+  .brand-logo {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    filter: drop-shadow(0 4px 20px var(--brand-blue-glow));
+    flex-shrink: 0;
+  }
+
+  .brand-logo img { width: 100%; height: 100%; object-fit: contain; }
+
+  .brand-name {
+    font-family: var(--font-display);
+    font-size: 34px;
+    letter-spacing: 2.5px;
+    line-height: 1;
+    background: linear-gradient(135deg, #ffffff 0%, var(--brand-blue-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .brand-store {
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-top: 3px;
+    letter-spacing: 1.2px;
+  }
+
+  .header-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .header-mode {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(45, 143, 255, 0.12);
+    border: 1px solid rgba(45, 143, 255, 0.25);
+    border-radius: 100px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--brand-blue);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 600;
+  }
+
+  .voice-control { display: flex; align-items: center; }
+
+  .voice-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(45, 143, 255, 0.1);
+    border: 1px solid var(--border-brand);
+    border-radius: 100px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .voice-btn:hover { background: rgba(45, 143, 255, 0.18); border-color: var(--brand-blue); }
+  .voice-btn.active { background: rgba(46, 232, 133, 0.15); border-color: var(--accent-green); color: var(--accent-green); box-shadow: 0 0 12px rgba(46, 232, 133, 0.3); }
+  .voice-btn.speaking { background: rgba(255, 138, 61, 0.18); border-color: var(--accent-orange); color: var(--accent-orange); animation: voice-pulse 0.8s ease-in-out infinite; }
+  @keyframes voice-pulse { 0%, 100% { box-shadow: 0 0 8px rgba(255, 138, 61, 0.3); } 50% { box-shadow: 0 0 24px rgba(255, 138, 61, 0.6); } }
+  .voice-icon { font-size: 12px; line-height: 1; }
+  .voice-label { line-height: 1; }
+
+  .mode-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 12px var(--accent-green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.85); } }
+
+  .header-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    font-family: var(--font-mono);
+    line-height: 1.2;
+  }
+
+  .meta-clock {
+    font-size: 32px;
+    color: var(--brand-blue);
+    font-weight: 700;
+    letter-spacing: 1.5px;
+  }
+
+  .meta-date {
+    font-size: 13px;
+    color: var(--brand-blue-light);
+    margin-top: 3px;
+    letter-spacing: 1.8px;
+    font-weight: 500;
+  }
+
+  /* ============================================================
+     2. SHIFT STATUS BAR (NEW)
+     ============================================================ */
+  .shift-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px;
+    background: var(--bg-card);
+    border: 1px solid rgba(46, 232, 133, 0.3);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    border-radius: 10px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .shift-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: rgba(46, 232, 133, 0.15);
+    border: 1px solid rgba(46, 232, 133, 0.4);
+    border-radius: 100px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent-green);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .shift-label-icon { font-size: 16px; }
+
+  .shift-employees {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .shift-employees::-webkit-scrollbar { display: none; }
+
+  .shift-emp {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--border-medium);
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  .shift-emp-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--brand-blue);
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .shift-emp-name {
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text-primary);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .shift-emp-role {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .shift-time-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+    gap: 2px;
+  }
+
+  .shift-hours {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .shift-next {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    letter-spacing: 0.5px;
+  }
+
+  /* ============================================================
+     3. NOTICE STRIP
+     ============================================================ */
+  .notice-strip {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    background: var(--bg-card);
+    border: 1px solid rgba(45, 143, 255, 0.15);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    flex-shrink: 0;
+  }
+
+  .notice-strip-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: rgba(0, 212, 255, 0.15);
+    border: 1px solid rgba(0, 212, 255, 0.4);
+    border-radius: 100px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--accent-cyan);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .notice-strip-icon { font-size: 14px; animation: bell-shake 3s ease-in-out infinite; }
+  @keyframes bell-shake { 0%, 100% { transform: rotate(0); } 5%, 15% { transform: rotate(-15deg); } 10%, 20% { transform: rotate(15deg); } }
+
+  .notice-strip-content {
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    mask-image: linear-gradient(90deg, transparent 0%, black 5%, black 95%, transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 5%, black 95%, transparent 100%);
+  }
+
+  .notice-strip-track {
+    display: inline-block;
+    animation: notice-scroll 45s linear infinite;
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: var(--text-primary);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+  }
+  .notice-strip-track .notice-sep { display: inline-block; margin: 0 20px; color: var(--accent-cyan); font-weight: 700; }
+  .notice-strip-track .notice-emoji { margin-right: 6px; font-size: 14px; }
+  @keyframes notice-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ============================================================
+     4. REVENUE + PIPELINE ROW
+     ============================================================ */
+  .stats-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .revenue-compact {
+    background: linear-gradient(135deg, rgba(15, 31, 58, 0.6) 0%, rgba(21, 42, 74, 0.8) 100%);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 10px 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(10px);
+  }
+
+  .revenue-compact::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--brand-blue), var(--accent-cyan));
+    box-shadow: 0 0 15px rgba(45, 143, 255, 0.4);
+  }
+
+  .revenue-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 8px;
+  }
+
+  .revenue-title-block { display: flex; align-items: baseline; gap: 8px; }
+
+  .revenue-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--brand-blue);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .revenue-day-badge {
+    padding: 4px 12px;
+    background: rgba(45, 143, 255, 0.12);
+    border: 1px solid rgba(45, 143, 255, 0.25);
+    border-radius: 100px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--brand-blue);
+    letter-spacing: 1px;
+    font-weight: 600;
+  }
+
+  .daily-hero {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 6px;
+  }
+
+  .daily-hero-main {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+
+  .revenue-dollar {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    color: var(--brand-blue);
+    font-weight: 700;
+    line-height: 1;
+    text-shadow: 0 0 20px rgba(45, 143, 255, 0.3);
+  }
+
+  .daily-hero-amount {
+    font-family: var(--font-display);
+    font-size: 56px;
+    line-height: 0.85;
+    letter-spacing: 1px;
+    background: linear-gradient(180deg, #ffffff 0%, var(--brand-blue-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .daily-hero-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .daily-hero-orders {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+  .daily-hero-orders-num {
+    font-size: 24px;
+    font-family: var(--font-display);
+    letter-spacing: 0.5px;
+  }
+
+  .daily-hero-avg {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .monthly-progress {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 6px;
+  }
+
+  .monthly-progress-label {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .monthly-label-text {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    letter-spacing: 1.5px;
+    font-weight: 600;
+  }
+
+  .monthly-label-amount {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+
+  .monthly-label-target {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-tertiary);
+  }
+
+  .monthly-label-pct {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--brand-blue-light);
+    font-weight: 700;
+  }
+
+  .revenue-bar {
+    height: 10px;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 100px;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .revenue-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--brand-blue-deep) 0%, var(--brand-blue) 50%, var(--accent-cyan) 100%);
+    border-radius: 100px;
+    transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 24px var(--brand-blue-glow), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    position: relative;
+  }
+  .revenue-bar-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+    animation: shimmer 3s ease-in-out infinite;
+  }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+  .revenue-cats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-top: 8px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .rev-cat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 6px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 4px;
+    border-left: 2px solid var(--cat-color, var(--brand-blue));
+  }
+  .rev-cat.repair { --cat-color: var(--brand-blue); }
+  .rev-cat.activation { --cat-color: var(--accent-cyan); }
+  .rev-cat.accessory { --cat-color: var(--accent-purple); }
+  .rev-cat.sales { --cat-color: var(--accent-green); }
+
+  .rev-cat-icon { font-size: 14px; line-height: 1; }
+  .rev-cat-amount {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+  .rev-cat-pct {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--cat-color);
+    font-weight: 700;
+    margin-left: auto;
+  }
+
+  /* Pipeline */
+  .pipeline-card {
+    background: linear-gradient(180deg, rgba(15, 31, 58, 0.5) 0%, rgba(21, 42, 74, 0.7) 100%);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 200px;
+  }
+
+  .pipeline-title {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-tertiary);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .pipeline-stages {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+  }
+
+  .pipeline-stage {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 6px;
+    border-left: 3px solid var(--stage-color, var(--text-tertiary));
+  }
+
+  .pipeline-stage.intake { --stage-color: var(--accent-orange); }
+  .pipeline-stage.repairing { --stage-color: var(--brand-blue); }
+  .pipeline-stage.qc { --stage-color: var(--accent-purple); }
+  .pipeline-stage.ready { --stage-color: var(--accent-green); }
+
+  .pipeline-stage-icon { font-size: 14px; line-height: 1; }
+
+  .pipeline-stage-count {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--text-primary);
+    line-height: 1;
+    margin-left: auto;
+  }
+
+  .pipeline-stage-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-secondary);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .pipeline-total {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-subtle);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-tertiary);
+    letter-spacing: 1px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .pipeline-total-num {
+    font-family: var(--font-display);
+    font-size: 22px;
+    color: var(--accent-cyan);
+    line-height: 1;
+  }
+
+  /* ============================================================
+     5. TODAY'S BOARD (FULL WIDTH)
+     ============================================================ */
+  .board-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, rgba(15, 31, 58, 0.5) 0%, rgba(21, 42, 74, 0.7) 100%);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+
+  .board-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+
+  .board-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--text-primary);
+  }
+
+  .board-badges {
+    display: flex;
+    gap: 6px;
+  }
+
+  .board-badge {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 4px 10px;
+    background: rgba(45, 143, 255, 0.12);
+    border: 1px solid rgba(45, 143, 255, 0.25);
+    border-radius: 100px;
+    color: var(--brand-blue);
+    letter-spacing: 1px;
+  }
+
+  .board-badge.urgent {
+    background: rgba(217, 48, 37, 0.08);
+    border-color: rgba(255, 85, 119, 0.4);
+    color: var(--accent-red);
+  }
+
+  .board-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .board-content::-webkit-scrollbar { display: none; }
+
+  /* Category group headers */
+  .board-group {
+    margin-bottom: 6px;
+  }
+
+  .board-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 10px;
+    margin-bottom: 4px;
+    border-radius: 6px;
+    background: var(--group-bg, rgba(45, 143, 255, 0.08));
+  }
+
+  .board-group-icon { font-size: 18px; line-height: 1; }
+
+  .board-group-label {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    color: var(--group-color, var(--brand-blue-light));
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+  }
+
+  .board-group-count {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin-left: auto;
+    font-weight: 600;
+  }
+
+  .board-group.handoffs {
+    --group-bg: rgba(0, 212, 255, 0.08);
+    --group-color: var(--accent-cyan);
+  }
+  .board-group.tasks {
+    --group-bg: rgba(168, 85, 247, 0.08);
+    --group-color: var(--accent-purple);
+  }
+  .board-group.deliveries {
+    --group-bg: rgba(255, 138, 61, 0.08);
+    --group-color: var(--accent-orange);
+  }
+
+  /* Urgent alert items - persistent red flash */
+  .board-item.urgent-alert {
+    border-left-color: var(--accent-red);
+    border-left-width: 5px;
+    background: linear-gradient(90deg, rgba(217, 48, 37, 0.08) 0%, rgba(0, 0, 0, 0.06) 100%);
+    animation: urgent-flash 1.2s ease-in-out infinite;
+    box-shadow: 0 0 20px rgba(217, 48, 37, 0.12);
+  }
+  @keyframes urgent-flash {
+    0%, 100% { border-left-color: var(--accent-red); box-shadow: 0 0 20px rgba(217, 48, 37, 0.12); }
+    50% { border-left-color: #ff2255; box-shadow: 0 0 35px rgba(255, 34, 85, 0.6); background: linear-gradient(90deg, rgba(217, 48, 37, 0.12) 0%, rgba(0, 0, 0, 0.06) 100%); }
+  }
+  .board-item.urgent-alert .item-text { color: #fff; font-weight: 700; }
+
+  .board-items { display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px; }
+
+  .board-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 10px;
+    border-left: 4px solid var(--border-medium);
+    position: relative;
+  }
+
+  .board-item.priority-1 { border-left-color: var(--accent-yellow); }
+  .board-item.priority-2 {
+    border-left-color: var(--accent-red);
+    background: linear-gradient(90deg, rgba(217, 48, 37, 0.06) 0%, rgba(0, 0, 0, 0.04) 100%);
+  }
+
+  .board-item.due-soon {
+    border-left-color: var(--accent-yellow);
+    background: linear-gradient(90deg, rgba(255, 201, 51, 0.1) 0%, rgba(0, 0, 0, 0.04) 100%);
+    animation: soon-breathe 2.5s ease-in-out infinite;
+  }
+  @keyframes soon-breathe { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 201, 51, 0); } 50% { box-shadow: 0 0 12px 2px rgba(255, 201, 51, 0.3); } }
+
+  .board-item.due-imminent {
+    border-left-color: var(--accent-red);
+    background: linear-gradient(90deg, rgba(217, 48, 37, 0.08) 0%, rgba(0, 0, 0, 0.04) 100%);
+    animation: imminent-breathe 1s ease-in-out infinite;
+  }
+  @keyframes imminent-breathe {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 85, 119, 0); border-left-color: var(--accent-red); }
+    50% { box-shadow: 0 0 20px 3px rgba(255, 85, 119, 0.5); border-left-color: #ff8aa3; }
+  }
+
+  .board-item.due-overdue {
+    border-left-color: #c4193e;
+    border-left-width: 4px;
+    background: linear-gradient(90deg, rgba(217, 48, 37, 0.1) 0%, rgba(0, 0, 0, 0.06) 100%);
+  }
+
+  .board-item.is-done {
+    opacity: 0.4;
+    background: rgba(0, 0, 0, 0.03);
+    border-left-color: var(--accent-green);
+  }
+  .board-item.is-done .item-text { text-decoration: line-through; color: var(--text-tertiary); }
+
+  .item-emoji { font-size: 26px; line-height: 1; width: 34px; text-align: center; }
+
+  .item-content { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+  .item-text {
+    font-family: var(--font-body);
+    font-size: 20px;
+    color: var(--text-primary);
+    line-height: 1.35;
+    font-weight: 500;
+    word-break: break-word;
+  }
+
+  .item-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--text-tertiary);
+    flex-wrap: wrap;
+  }
+
+  .item-id { color: var(--accent-cyan); font-weight: 600; }
+
+  .item-badge {
+    padding: 2px 8px;
+    background: rgba(45, 143, 255, 0.15);
+    border-radius: 4px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--brand-blue-light);
+    font-weight: 600;
+  }
+
+  .item-due {
+    padding: 2px 8px;
+    background: rgba(255, 201, 51, 0.18);
+    color: var(--accent-yellow);
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  .item-right-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .item-time-remaining {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+  }
+  .item-time-remaining.normal { background: rgba(91, 174, 255, 0.12); color: var(--brand-blue-light); }
+  .item-time-remaining.soon { background: rgba(255, 201, 51, 0.18); color: var(--accent-yellow); }
+  .item-time-remaining.imminent { background: rgba(255, 85, 119, 0.22); color: var(--accent-red); animation: time-flash 0.8s ease-in-out infinite; }
+  .item-time-remaining.overdue { background: #c4193e; color: #fff; }
+  @keyframes time-flash { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .item-time-remaining.done { background: rgba(46, 232, 133, 0.18); color: var(--accent-green); }
+
+  .item-structured-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 3px;
+    flex-wrap: wrap;
+  }
+
+  .meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    background: rgba(91, 174, 255, 0.08);
+    border: 1px solid rgba(91, 174, 255, 0.15);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+  .meta-chip.ticket { color: var(--accent-cyan); border-color: rgba(0, 212, 255, 0.3); }
+  .meta-chip.phone { color: var(--brand-blue-light); }
+  .meta-chip.amount { color: var(--accent-green); }
+  .meta-chip.unpaid { color: var(--accent-yellow); border-color: rgba(255, 201, 51, 0.3); }
+
+  /* ============================================================
+     6. STORE RANKINGS (FIXED)
+     ============================================================ */
+  .rankings-fixed {
+    flex-shrink: 0;
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .rankings-fixed::-webkit-scrollbar { display: none; }
+
+  .rank-fixed-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 6px;
+    border-left: 3px solid var(--border-medium);
+    flex-shrink: 0;
+    min-width: 0;
+  }
+  .rank-fixed-item.is-top1 { border-left-color: var(--accent-yellow); background: linear-gradient(90deg, rgba(255, 201, 51, 0.12) 0%, rgba(0, 0, 0, 0.04) 100%); }
+  .rank-fixed-item.is-top2 { border-left-color: #c0d4ee; }
+  .rank-fixed-item.is-top3 { border-left-color: #cd9b6c; }
+  .rank-fixed-item.is-current { border-left-color: var(--brand-blue); background: linear-gradient(90deg, rgba(45, 143, 255, 0.15) 0%, rgba(0, 0, 0, 0.04) 100%); box-shadow: 0 0 12px rgba(45, 143, 255, 0.15); }
+
+  .rank-fixed-pos { font-family: var(--font-display); font-size: 18px; color: var(--text-tertiary); min-width: 16px; text-align: center; }
+  .rank-fixed-item.is-top1 .rank-fixed-pos { color: var(--accent-yellow); }
+
+  .rank-fixed-name { font-family: var(--font-body); font-size: 13px; color: var(--text-primary); font-weight: 500; white-space: nowrap; }
+  .rank-fixed-item.is-current .rank-fixed-name { color: var(--brand-blue-light); font-weight: 700; }
+
+  .rank-fixed-rev { font-family: var(--font-mono); font-size: 13px; color: var(--accent-green); font-weight: 700; white-space: nowrap; }
+
+  /* Bar chart mode */
+  .rank-bar-item {
+    display: grid;
+    grid-template-columns: 100px 1fr 80px;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+  .rank-bar-item.is-current .rank-bar-name { color: var(--brand-blue-light); font-weight: 700; }
+
+  .rank-bar-name { font-family: var(--font-body); font-size: 12px; color: var(--text-secondary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .rank-bar-track { height: 14px; background: rgba(0, 0, 0, 0.06); border-radius: 100px; overflow: hidden; border: 1px solid var(--border-subtle); }
+  .rank-bar-fill { height: 100%; background: linear-gradient(90deg, var(--brand-blue-deep), var(--brand-blue)); border-radius: 100px; transition: width 1s ease; min-width: 2px; }
+  .rank-bar-item.is-current .rank-bar-fill { background: linear-gradient(90deg, var(--brand-blue), var(--accent-cyan)); }
+
+  .rank-bar-amount { font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); font-weight: 700; text-align: right; }
+
+  /* Rankings fixed vertical layout for bar chart */
+  .rankings-fixed.bar-mode {
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 14px;
+  }
+
+  /* Reviews row */
+  .reviews-fixed {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .review-card {
+    background: linear-gradient(180deg, rgba(15, 31, 58, 0.7) 0%, rgba(21, 42, 74, 0.85) 100%);
+    border: 1px solid var(--border-medium);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .review-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--review-color, var(--brand-blue));
+    box-shadow: 0 0 12px var(--review-color, var(--brand-blue));
+  }
+  .review-card.google { --review-color: #4285F4; }
+  .review-card.yelp { --review-color: #FF1A1A; }
+  .review-card.wechat { --review-color: #07C160; }
+
+  .review-logo { flex-shrink: 0; display: flex; align-items: center; }
+  .review-logo img { height: 36px; object-fit: contain; filter: drop-shadow(0 0 8px rgba(255,255,255,0.15)); }
+
+  .review-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+  .review-platform { font-family: var(--font-mono); font-size: 10px; color: var(--text-tertiary); letter-spacing: 1.5px; text-transform: uppercase; font-weight: 600; }
+  .review-count-row { display: flex; align-items: baseline; gap: 10px; }
+  .review-count { font-family: var(--font-display); font-size: 34px; color: var(--text-primary); line-height: 1; letter-spacing: 1px; }
+  .review-growth {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--accent-green);
+  }
+  .review-growth .growth-arrow { font-size: 14px; }
+  .review-growth.no-new {
+    color: var(--accent-red);
+    font-size: 16px;
+    font-weight: 800;
+    animation: delta-pulse 2s ease-in-out infinite;
+  }
+  .review-growth.no-new .growth-arrow { display: none; }
+  .rv-baseline { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+  @keyframes delta-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  /* Rankings compact */
+  .rankings-row {
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 8px;
+  }
+
+  .rank-list-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 10px 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+
+  .rank-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .rank-card-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    letter-spacing: 1.5px;
+    color: var(--text-primary);
+  }
+
+  .rank-card-badge {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 10px;
+    background: rgba(45, 143, 255, 0.12);
+    border: 1px solid rgba(45, 143, 255, 0.25);
+    border-radius: 100px;
+    color: var(--brand-blue);
+    letter-spacing: 1px;
+  }
+
+  .rank-list { display: flex; flex-direction: column; gap: 3px; }
+
+  .rank-item {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+  }
+  .rank-item.is-current { background: linear-gradient(90deg, rgba(45, 143, 255, 0.18) 0%, rgba(0, 0, 0, 0.04) 100%); border-left-color: var(--brand-blue); box-shadow: 0 0 16px rgba(45, 143, 255, 0.15); }
+  .rank-item.is-top1 { background: linear-gradient(90deg, rgba(255, 201, 51, 0.15) 0%, rgba(0, 0, 0, 0.04) 100%); border-left-color: var(--accent-yellow); }
+
+  .rank-num { font-family: var(--font-display); font-size: 22px; color: var(--text-tertiary); text-align: center; line-height: 1; }
+  .rank-item.is-top1 .rank-num { color: var(--accent-yellow); }
+  .rank-item.is-top2 .rank-num { color: #c0d4ee; }
+  .rank-item.is-top3 .rank-num { color: #cd9b6c; }
+
+  .rank-name { font-family: var(--font-body); font-size: 15px; color: var(--text-primary); font-weight: 500; }
+  .rank-name-current { color: var(--brand-blue-light); font-weight: 700; }
+  .rank-amount { font-family: var(--font-mono); font-size: 16px; color: var(--text-primary); font-weight: 700; text-align: right; }
+  .rank-orders { font-family: var(--font-mono); font-size: 11px; color: var(--text-tertiary); margin-top: 1px; }
+
+  /* Champion */
+  .champion-box {
+    background: linear-gradient(135deg, rgba(249, 171, 0, 0.08) 0%, var(--bg-card) 70%);
+    border: 1.5px solid rgba(249, 171, 0, 0.3);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .champion-box::before {
+    content: '';
+    position: absolute;
+    top: -30%; left: 50%; transform: translateX(-50%);
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(255, 201, 51, 0.25) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .champion-content { position: relative; z-index: 1; }
+  .champion-eyebrow { font-family: var(--font-mono); font-size: 8px; color: var(--accent-orange); text-transform: uppercase; letter-spacing: 2px; font-weight: 700; margin-bottom: 6px; }
+  .champion-trophy { font-size: 36px; line-height: 1; margin-bottom: 6px; filter: drop-shadow(0 4px 20px rgba(255, 201, 51, 0.6)); }
+  .champion-name { font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; line-height: 1.2; }
+  .champion-amount { font-family: var(--font-display); font-size: 22px; color: var(--accent-orange); letter-spacing: 1.5px; }
+  .champion-label { font-family: var(--font-mono); font-size: 8px; color: var(--text-tertiary); margin-top: 4px; letter-spacing: 1.5px; text-transform: uppercase; }
+
+  /* Employee rankings */
+  .emp-rank-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .emp-rank-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 6px;
+    border-left: 3px solid var(--accent-cyan);
+  }
+  .emp-rank-item:first-child { border-left-color: var(--accent-yellow); }
+  .emp-rank-item:nth-child(2) { border-left-color: #c0d4ee; }
+  .emp-rank-item:nth-child(3) { border-left-color: #cd9b6c; }
+  .emp-rank-num { font-family: var(--font-display); font-size: 16px; color: var(--text-tertiary); min-width: 18px; text-align: center; }
+  .emp-rank-item:first-child .emp-rank-num { color: var(--accent-yellow); }
+  .emp-rank-name { font-family: var(--font-body); font-size: 12px; color: var(--text-primary); font-weight: 500; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .emp-rank-stats { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+  .emp-rank-revenue { font-family: var(--font-mono); font-size: 12px; color: var(--accent-green); font-weight: 700; }
+  .emp-rank-orders { font-family: var(--font-mono); font-size: 8px; color: var(--text-tertiary); }
+
+  /* SOP compact */
+  .sop-compact {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 10px 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+
+  .sop-list { display: flex; flex-direction: column; gap: 3px; }
+
+  .sop-item {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 8px;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+  }
+  .sop-item.checked { opacity: 0.45; }
+
+  .sop-check {
+    width: 16px; height: 16px;
+    border: 2px solid var(--text-tertiary);
+    border-radius: 4px;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+  }
+  .sop-item.checked .sop-check { background: var(--accent-green); border-color: var(--accent-green); box-shadow: 0 0 8px rgba(46, 232, 133, 0.4); }
+  .sop-item.checked .sop-check::after { content: '\2713'; color: var(--bg-primary); font-size: 11px; font-weight: 800; }
+  .sop-label { font-family: var(--font-body); font-size: 12px; color: var(--text-primary); line-height: 1.3; font-weight: 500; }
+  .sop-item.checked .sop-label { text-decoration: line-through; color: var(--text-tertiary); }
+
+  .sop-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .sop-progress-bar { flex: 1; height: 5px; background: rgba(0, 0, 0, 0.06); border-radius: 100px; overflow: hidden; }
+  .sop-progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-green) 0%, var(--accent-cyan) 100%); box-shadow: 0 0 12px rgba(46, 232, 133, 0.5); transition: width 0.5s ease; }
+  .sop-progress-text { font-family: var(--font-mono); font-size: 11px; color: var(--accent-green); font-weight: 700; }
+
+  /* Combos compact */
+  .promo-list { display: flex; flex-direction: column; gap: 4px; }
+
+  .promo-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent-purple);
+  }
+  .promo-emoji { font-size: 20px; line-height: 1; }
+  .promo-content { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .promo-title { font-family: var(--font-body); font-size: 12px; color: var(--text-primary); font-weight: 600; line-height: 1.3; }
+  .promo-desc { font-family: var(--font-body); font-size: 10px; color: var(--text-secondary); line-height: 1.3; }
+  .promo-price { font-family: var(--font-display); font-size: 20px; color: var(--accent-yellow); letter-spacing: 0.5px; line-height: 1; }
+
+  /* Recommendations row */
+  .recommend-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .recommend-card {
+    background: linear-gradient(180deg, rgba(15, 31, 58, 0.6) 0%, rgba(21, 42, 74, 0.8) 100%);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+  }
+  .recommend-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--rc-color, var(--brand-blue));
+    box-shadow: 0 0 12px var(--rc-color, var(--brand-blue));
+  }
+  .recommend-card.carrier { --rc-color: var(--accent-cyan); }
+  .recommend-card.products { --rc-color: var(--accent-yellow); }
+
+  .recommend-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .recommend-icon { font-size: 20px; line-height: 1; }
+  .recommend-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    color: var(--text-primary);
+    letter-spacing: 1px;
+  }
+
+  .recommend-list { display: flex; flex-direction: column; gap: 5px; }
+
+  .recommend-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 6px 10px;
+    background: rgba(15, 31, 58, 0.5);
+    border-radius: 8px;
+    border-left: 3px solid var(--rc-color, var(--brand-blue));
+  }
+  .recommend-item-emoji { font-size: 22px; line-height: 1; }
+  .recommend-item-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .recommend-item-name { font-family: var(--font-body); font-size: 15px; color: var(--text-primary); font-weight: 600; line-height: 1.3; }
+  .recommend-item-desc { font-family: var(--font-body); font-size: 12px; color: var(--text-secondary); line-height: 1.3; }
+  .recommend-item-price { font-family: var(--font-display); font-size: 20px; color: var(--accent-yellow); letter-spacing: 0.5px; line-height: 1; }
+
+  /* ============================================================
+     7. STATUS BAR (minimal)
+     ============================================================ */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 4px 16px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+  }
+  .status-sep { color: var(--text-dim); }
+
+  .footer-stat-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 10px var(--accent-green);
+  }
+  .footer-stat-dot.error { background: var(--accent-red); box-shadow: 0 0 10px var(--accent-red); }
+  .footer-stat-dot.warn { background: var(--accent-yellow); box-shadow: 0 0 10px var(--accent-yellow); }
+
+  /* ============================================================
+     BURN-IN PROTECTION
+     ============================================================ */
+  @keyframes pixel-shift {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(1px, 1px); }
+    50% { transform: translate(0, 2px); }
+    75% { transform: translate(-1px, 1px); }
+    100% { transform: translate(0, 0); }
+  }
+
+  #app {
+    animation: pixel-shift 120s ease-in-out infinite;
+  }
+
+
+  /* ============================================================
+     PORTRAIT MODE — 完全自适应,任何屏幕都能填满
+     
+     策略:
+     - #app 按 1080×1920 设计基准设计 (大屏直观尺寸)
+     - JS 启动时计算缩放比 + 旋转角度
+     - 任何 WebView 画布大小都能完美填充
+     ============================================================ */
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    background: #0a1628;
+  }
+
+  /* #app 是设计稿,固定 1080×1920,JS 会缩放它 */
+  #app {
+    width: 1080px;
+    height: 1920px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: top left;
+    /* JS 会动态注入 transform: matrix() 实现旋转+缩放+定位 */
+    
+    padding: 16px 20px;
+    gap: 10px;
+    display: grid;
+    grid-template-rows:
+      120px      /* 1. Header */
+      72px       /* 2. Shift bar */
+      56px       /* 3. Notice */
+      280px      /* 4. Revenue */
+      180px      /* 5. Pipeline */
+      1fr        /* 6. Board */
+      130px      /* 7. Recommend */
+      120px      /* 8. Reviews */
+      280px      /* 9. Rankings */
+      32px       /* 10. Status */;
+    grid-template-columns: 1fr;
+  }
+
+  /* 隐藏鼠标 */
+  *, *::before, *::after { cursor: none !important; }
+
+  /* ===== 1. HEADER ===== */
+  .header {
+    grid-template-columns: auto 1fr auto;
+    padding: 14px 22px;
+    gap: 16px;
+    border-radius: 12px;
+  }
+  .header-center { display: flex; }
+  .brand-logo { width: 60px; height: 60px; }
+  .brand-name { font-size: 44px; letter-spacing: 3px; }
+  .brand-store { font-size: 18px; margin-top: 2px; }
+  .header-mode { font-size: 16px; }
+  .meta-clock { font-size: 38px; }
+  .meta-date { font-size: 14px; letter-spacing: 1.5px; }
+  .voice-toggle { display: none; }
+
+  /* ===== 2. SHIFT BAR ===== */
+  .shift-bar { padding: 10px 20px; gap: 14px; border-radius: 12px; }
+  .shift-label { font-size: 16px; padding: 6px 14px; gap: 8px; }
+  .shift-label-icon { font-size: 18px; }
+  .shift-emp { padding: 6px 12px; gap: 8px; }
+  .shift-emp-avatar { width: 32px; height: 32px; font-size: 14px; }
+  .shift-emp-name { font-size: 18px; }
+  .shift-emp-role { font-size: 12px; }
+  .shift-time-info { display: flex; font-size: 14px; }
+
+  /* ===== 3. NOTICE STRIP ===== */
+  .notice-strip { padding: 8px 18px; gap: 12px; border-radius: 10px; }
+  .notice-strip-label { font-size: 15px; padding: 5px 12px; gap: 6px; }
+  .notice-strip-icon { font-size: 16px; }
+  .notice-strip-track { font-size: 18px; }
+
+  /* ===== 4. REVENUE ===== */
+  .revenue-compact { padding: 18px 24px; gap: 12px; border-radius: 12px; }
+  .revenue-eyebrow { font-size: 18px; }
+  .revenue-day-badge { font-size: 16px; padding: 6px 14px; }
+  .revenue-amount { font-size: 130px; line-height: 1; letter-spacing: -2px; }
+  .revenue-dollar { font-size: 70px; }
+  .revenue-bar { height: 12px; }
+  .revenue-cats { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .revenue-cat { padding: 8px 10px; gap: 4px; }
+  .revenue-cat-icon { font-size: 18px; }
+  .revenue-cat-amount { font-size: 22px; }
+  .revenue-cat-label { font-size: 11px; }
+
+  /* ===== 5. PIPELINE ===== */
+  .pipeline-card { padding: 14px 22px; min-width: 0; border-radius: 12px; }
+  .pipeline-title { font-size: 18px; }
+  .pipeline-stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .pipeline-stage { padding: 10px 8px; flex-direction: column; gap: 4px; align-items: center; }
+  .pipeline-stage-icon { font-size: 22px; }
+  .pipeline-stage-label { font-size: 14px; }
+  .pipeline-stage-count { font-size: 36px; }
+  .pipeline-total { font-size: 14px; }
+  .pipeline-total-num { font-size: 28px; }
+
+  /* ===== 6. BOARD ===== */
+  .board-section { overflow: hidden; padding: 14px 18px; border-radius: 12px; }
+  .board-title-row { font-size: 20px; margin-bottom: 10px; }
+  .board-count-badge { font-size: 14px; padding: 4px 10px; }
+  .board-group-icon { font-size: 18px; }
+  .board-group-label { font-size: 16px; }
+  .board-group-count { font-size: 14px; }
+  .board-group { margin-bottom: 8px; }
+  .board-items { gap: 6px; margin-bottom: 8px; }
+  .board-item { padding: 12px 14px; gap: 12px; grid-template-columns: auto 1fr auto; border-radius: 10px; }
+  .item-emoji { font-size: 24px; width: 32px; }
+  .item-content { gap: 4px; }
+  .item-text { font-size: 17px; line-height: 1.35; }
+  .item-meta { font-size: 13px; gap: 8px; }
+  .item-id { font-size: 13px; }
+  .item-structured-meta { gap: 6px; margin-top: 4px; }
+  .meta-chip { font-size: 12px; padding: 2px 8px; }
+  .item-time-remaining { font-size: 13px; padding: 4px 10px; }
+  .item-right-info { gap: 4px; }
+
+  /* ===== 7. RECOMMENDATIONS ===== */
+  .recommend-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .recommend-card { padding: 12px 14px; border-radius: 10px; }
+  .recommend-card-title { font-size: 15px; }
+  .recommend-item { padding: 6px 8px; gap: 8px; }
+  .recommend-item-icon { font-size: 18px; }
+  .recommend-item-name { font-size: 13px; }
+  .recommend-item-desc { font-size: 11px; }
+  .recommend-item-price { font-size: 14px; }
+  .recommend-item-unit { font-size: 11px; }
+
+  /* ===== 8. REVIEWS ===== */
+  .reviews-fixed { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .review-card { padding: 12px 14px; gap: 10px; border-radius: 10px; }
+  .review-card::before { height: 3px; }
+  .review-logo img { height: 28px; }
+  .review-platform { font-size: 11px; letter-spacing: 1.5px; }
+  .review-count { font-size: 32px; }
+  .review-count-row { gap: 8px; }
+  .review-growth { font-size: 14px; }
+  .review-growth .growth-arrow { font-size: 12px; }
+  .review-growth.no-new { font-size: 13px; }
+  .rv-baseline { font-size: 11px; }
+
+  /* ===== 9. RANKINGS ===== */
+  .rankings-fixed.bar-mode { padding: 14px 22px; gap: 6px; overflow: hidden; border-radius: 12px; }
+  .rank-bar-item { grid-template-columns: 110px 1fr 90px; gap: 12px; padding: 4px 0; }
+  .rank-bar-name { font-size: 15px; }
+  .rank-bar-track { height: 14px; }
+  .rank-bar-amount { font-size: 16px; }
+  .rank-fixed-pos { font-size: 22px; min-width: 24px; }
+
+  /* ===== 10. STATUS BAR ===== */
+  .status-bar { padding: 6px 16px; font-size: 12px; gap: 10px; }
+  .footer-stat-dot { width: 10px; height: 10px; }
+
+</style>
+</head>
+
+<body>
+<div id="app">
+
+  <!-- 1. HEADER -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-logo">
+        <img src="logo.png" alt="iFixForU">
+      </div>
+      <div>
+        <div class="brand-name">iFIXFORU</div>
+        <div class="brand-store" id="storeName">San Gabriel HQ</div>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <div class="header-mode">
+        <span class="mode-dot"></span>
+        <span id="modeLabel">营业中 · 实时</span>
+      </div>
+      <div class="voice-control">
+        <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
+          <span class="voice-icon" id="voiceIcon">&#x1F507;</span>
+          <span class="voice-label" id="voiceLabel">开启语音</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="header-meta">
+      <div class="meta-clock" id="clockDisplay">--:--:--</div>
+      <div class="meta-date" id="dateDisplay">----.--.-- ---</div>
+    </div>
+  </header>
+
+  <!-- 2. SHIFT STATUS BAR -->
+  <div class="shift-bar" id="shiftBar">
+    <div class="shift-label">
+      <span class="shift-label-icon">&#x1F465;</span>
+      <span>当班员工</span>
+    </div>
+    <div class="shift-employees" id="shiftEmployees"></div>
+    <div class="shift-time-info">
+      <div class="shift-hours" id="shiftHours">10:00 - 21:00</div>
+      <div class="shift-next" id="shiftNext">下一班: 晚班 17:00</div>
+    </div>
+  </div>
+
+  <!-- 3. NOTICE STRIP -->
+  <div class="notice-strip">
+    <div class="notice-strip-label">
+      <span class="notice-strip-icon">&#x1F514;</span>
+      <span>通知</span>
+    </div>
+    <div class="notice-strip-content">
+      <div class="notice-strip-track" id="noticeTrack">加载通知中...</div>
+    </div>
+  </div>
+
+  <!-- 4. REVENUE + PIPELINE -->
+  <div class="stats-row">
+    <div class="revenue-compact">
+      <div class="revenue-top">
+        <div class="revenue-title-block">
+          <span class="revenue-eyebrow">今日营业额</span>
+        </div>
+        <div class="revenue-day-badge" id="dayOfMonth">DAY -- / --</div>
+      </div>
+      <!-- Daily stats hero -->
+      <div class="daily-hero">
+        <div class="daily-hero-main">
+          <span class="revenue-dollar">$</span>
+          <span class="daily-hero-amount" id="dailyRevenue">0</span>
+        </div>
+        <div class="daily-hero-meta">
+          <div class="daily-hero-orders"><span class="daily-hero-orders-num" id="dailyOrders">0</span> 单</div>
+          <div class="daily-hero-avg">均单 $<span id="dailyAvg">0</span></div>
+        </div>
+      </div>
+      <!-- Monthly progress -->
+      <div class="monthly-progress">
+        <div class="monthly-progress-label">
+          <span class="monthly-label-text">本月累计</span>
+          <span class="monthly-label-amount">$<span id="totalRevenue">0</span></span>
+          <span class="monthly-label-target" id="totalTarget">/ $65,000</span>
+          <span class="monthly-label-pct" id="totalPct">0%</span>
+        </div>
+        <div class="revenue-bar">
+          <div class="revenue-bar-fill" id="totalBar" style="width: 0%"></div>
+        </div>
+      </div>
+      <!-- Category breakdown (today) -->
+      <div class="revenue-cats" id="revenueCats">
+        <div class="rev-cat repair"><span class="rev-cat-icon">&#x1F527;</span><span class="rev-cat-amount" id="repairAmt">$0</span><span class="rev-cat-pct" id="repairPct">0%</span></div>
+        <div class="rev-cat activation"><span class="rev-cat-icon">&#x1F4F1;</span><span class="rev-cat-amount" id="activationAmt">$0</span><span class="rev-cat-pct" id="activationPct">0%</span></div>
+        <div class="rev-cat accessory"><span class="rev-cat-icon">&#x1F3A7;</span><span class="rev-cat-amount" id="accessoryAmt">$0</span><span class="rev-cat-pct" id="accessoryPct">0%</span></div>
+        <div class="rev-cat sales"><span class="rev-cat-icon">&#x1F4BC;</span><span class="rev-cat-amount" id="salesAmt">$0</span><span class="rev-cat-pct" id="salesPct">0%</span></div>
+      </div>
+    </div>
+
+    <div class="pipeline-card">
+      <div class="pipeline-title">维修进度</div>
+      <div class="pipeline-stages" id="pipelineStages">
+        <div class="pipeline-stage intake">
+          <span class="pipeline-stage-icon">&#x1F4E5;</span>
+          <span class="pipeline-stage-label">接单</span>
+          <span class="pipeline-stage-count" id="pipeIntake">0</span>
+        </div>
+        <div class="pipeline-stage repairing">
+          <span class="pipeline-stage-icon">&#x1F527;</span>
+          <span class="pipeline-stage-label">维修中</span>
+          <span class="pipeline-stage-count" id="pipeRepairing">0</span>
+        </div>
+        <div class="pipeline-stage qc">
+          <span class="pipeline-stage-icon">&#x1F50D;</span>
+          <span class="pipeline-stage-label">质检</span>
+          <span class="pipeline-stage-count" id="pipeQC">0</span>
+        </div>
+        <div class="pipeline-stage ready">
+          <span class="pipeline-stage-icon">&#x2705;</span>
+          <span class="pipeline-stage-label">待取</span>
+          <span class="pipeline-stage-count" id="pipeReady">0</span>
+        </div>
+      </div>
+      <div class="pipeline-total">
+        <span>总计:</span>
+        <span class="pipeline-total-num" id="pipeTotal">0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. TODAY'S BOARD (FULL WIDTH) -->
+  <div class="board-section">
+    <div class="board-header">
+      <div class="board-title">今日看板</div>
+      <div class="board-badges">
+        <div class="board-badge" id="itemCount">0 项</div>
+        <div class="board-badge urgent" id="urgentCount" style="display:none">0 紧急</div>
+      </div>
+    </div>
+    <div class="board-content" id="boardContent"></div>
+  </div>
+
+  <!-- 6. TODAY RECOMMENDATIONS -->
+  <div class="recommend-row" id="recommendSection"></div>
+
+  <!-- 7. REVIEWS (FIXED) -->
+  <div class="reviews-fixed" id="reviewsFixed"></div>
+
+  <!-- 7. STORE RANKINGS BAR CHART (FIXED) -->
+  <div class="rankings-fixed bar-mode" id="rankingsFixed"></div>
+
+  <!-- 7. STATUS BAR (minimal) -->
+  <div class="status-bar">
+    <div class="footer-stat-dot" id="connStatus"></div>
+    <span id="connText">已连接</span>
+    <span class="status-sep">·</span>
+    <span id="lastUpdate">更新: --:--</span>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const CONFIG = {
+  API_BASE: 'http://localhost:8889',
+  STORE_CODE: 'san_gabriel',
+  REFRESH_INTERVAL: 60000,
+  BOTTOM_ROTATE_INTERVAL: 10000,
+  QUOTA_SPLIT: { repair: 0.35, activation: 0.35, accessory: 0.20, sales: 0.10 }
+};
+
+// ============================================================
+// WEEKLY SCHEDULE (Apr 28 - May 4, 2026)
+// Keys: store abbreviation -> array of { name, role }
+// ============================================================
+const WEEKLY_SCHEDULE = {
+  // Mon Apr 28
+  '2026-04-28': {
+    SG: ['Harry Zou', 'Cici'],
+    AR: ['Kevin Huang'],
+    AR3: ['Will Jiang'],
+    IR: ['Jason Zeng'],
+    RANCHO: ['Chester'],
+    NV: ['Bill Han', 'Grace'],
+    RH: ['Steve Shen'],
+    MPK: ['Boby Liu']
+  },
+  // Tue Apr 29
+  '2026-04-29': {
+    SG: ['Harry Zou', 'Kelvin Liu'],
+    AR: ['Jayden Sun'],
+    AR3: ['Will Jiang'],
+    IR: ['Jason Zeng'],
+    RANCHO: ['Boby Liu'],
+    NV: ['Bill Han'],
+    RH: ['Chester'],
+    MPK: ['Cici']
+  },
+  // Wed Apr 30
+  '2026-04-30': {
+    SG: ['Harry Zou', 'Jayden Sun'],
+    AR: ['Kevin Huang'],
+    AR3: ['Will Jiang'],
+    IR: ['Jason Zeng'],
+    RANCHO: ['Kelvin Liu'],
+    NV: ['Bill Han'],
+    RH: ['Steve Shen'],
+    MPK: ['Boby Liu']
+  },
+  // Thu May 1
+  '2026-05-01': {
+    SG: ['Harry Zou', 'Jayden Sun'],
+    AR: ['Kevin Huang'],
+    AR3: ['Will Jiang'],
+    IR: ['Jason Zeng'],
+    RANCHO: ['Boby Liu'],
+    NV: ['Grace'],
+    RH: ['Steve Shen'],
+    MPK: ['Cici']
+  },
+  // Fri May 2
+  '2026-05-02': {
+    SG: ['Harry Zou'],
+    AR: ['Jayden Sun'],
+    AR3: ['Will Jiang'],
+    IR: ['Feiyang Zhao'],
+    RANCHO: ['Kelvin Liu'],
+    NV: ['Bill Han'],
+    RH: ['Steve Shen'],
+    MPK: ['Cici']
+  },
+  // Sat May 3
+  '2026-05-03': {
+    SG: ['Harry Zou'],
+    AR: ['Kevin Huang'],
+    AR3: [],
+    IR: ['Feiyang Zhao'],
+    RANCHO: ['Kelvin Liu'],
+    NV: ['Grace'],
+    RH: ['Chester'],
+    MPK: ['Cici']
+  },
+  // Sun May 4
+  '2026-05-04': {
+    SG: ['Harry Zou'],
+    AR: ['Chester'],
+    AR3: ['Kelvin Liu'],
+    IR: ['Jason Zeng'],
+    RANCHO: ['Jayden Sun'],
+    NV: ['Bill Han', 'Grace'],
+    RH: ['Steve Shen'],
+    MPK: ['Cici']
+  }
+};
+
+// Map store codes to schedule abbreviations
+const STORE_TO_SCHED = {
+  san_gabriel: 'SG', monterey_park: 'MPK', arcadia_1: 'AR', arcadia_2: 'AR3',
+  irvine: 'IR', rancho_cucamonga: 'RANCHO', las_vegas: 'NV', rowland_heights: 'RH'
+};
+
+function getTodaySchedule(storeCode) {
+  const now = new Date();
+  const pst = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  const dateStr = pst.getFullYear() + '-' + String(pst.getMonth()+1).padStart(2,'0') + '-' + String(pst.getDate()).padStart(2,'0');
+  const daySchedule = WEEKLY_SCHEDULE[dateStr];
+  if (!daySchedule) return [];
+  const abbr = STORE_TO_SCHED[storeCode] || '';
+  return daySchedule[abbr] || [];
+}
+
+// ============================================================
+// MOCK DATA (realistic store operations data)
+// ============================================================
+const MOCK_DATA = {
+  store: { code: 'san_gabriel', name: 'San Gabriel', display_name_en: 'San Gabriel', phone: '626-800-2030', address: '311 E Valley Blvd #101, San Gabriel, CA 91776', monthly_target: 65000 },
+
+  // Shift / employee info
+  shift: {
+    current: 'Morning',
+    hours: '10:00 - 19:00',
+    next_shift: '',
+    employees: [
+      { name: 'Andy', role: 'Manager', initials: 'A', color: '#2D8FFF' },
+      { name: 'Tech Lee', role: 'Lead Tech', initials: 'L', color: '#00d4ff' },
+      { name: 'Sarah', role: 'Sales', initials: 'S', color: '#a855f7' },
+      { name: 'Mike', role: 'Tech', initials: 'M', color: '#2ee885' }
+    ]
+  },
+
+  // Repair pipeline
+  pipeline: {
+    intake: 3,
+    repairing: 5,
+    qc: 2,
+    ready: 4
+  },
+
+  // Board items
+  items: [
+    { id: 41, type: 'customer_followup', content: 'Mr. Wang picking up iPhone 15 Pro - screen replaced', display_emoji: '\u{1F4DE}', due_date: '2026-05-01', due_time: '15:00', status: 'pending', creator_name: 'Tech Lee', meta: { ticket: 'RT-1042', phone: '626-555-0142', amount: 189, paid: true } },
+    { id: 46, type: 'customer_followup', content: 'URGENT: VIP customer Mr. Li waiting in store for iPad Pro repair - promised 2hr turnaround', display_emoji: '\u{1F6A8}', due_date: '2026-05-01', due_time: '14:00', status: 'pending', urgent: true, creator_name: 'Andy', meta: { ticket: 'RT-1046', phone: '626-555-0888', amount: 350, paid: false } },
+    { id: 38, type: 'repair_pending', content: 'Samsung Z Fold 5 motherboard - waiting customer approval on $380 quote', display_emoji: '\u{1F527}', status: 'pending', creator_name: 'Tech Lee', meta: { ticket: 'RT-1038', phone: '626-555-0387', amount: 380, paid: false } },
+    { id: 42, type: 'incoming_inventory', content: 'Samsung S26 Ultra screen arrived - for ticket RT-1041', display_emoji: '\u{1F4E6}', due_date: '2026-05-01', creator_name: 'Andy', meta: { ticket: 'RT-1041', source: 'eBay' } },
+    { id: 40, type: 'handoff', content: 'Tech Zhang on leave today - Tech Lee covering repair desk', display_emoji: '\u{1F504}', creator_name: 'Andy' },
+    { id: 44, type: 'handoff', content: 'POS software updated last night - new discount feature under Sales > Promo', display_emoji: '\u{1F504}', creator_name: 'Andy' },
+    { id: 43, type: 'customer_followup', content: 'Ms. Park picking up Pixel 8 - battery replaced', display_emoji: '\u{1F4DE}', due_date: '2026-05-01', due_time: '11:30', status: 'pending', creator_name: 'Tech Lee', meta: { ticket: 'RT-1043', phone: '626-555-0211', amount: 95, paid: false } },
+    { id: 39, type: 'todo', content: 'Order more iPhone 14 screens from LA warehouse - stock at 2', display_emoji: '\u{270F}\uFE0F', creator_name: 'Andy' },
+    { id: 34, type: 'customer_followup', content: 'Ms. Chen pickup iPad - repair complete, customer notified', display_emoji: '\u{1F4DE}', due_date: '2026-05-01', due_time: '17:30', status: 'pending', creator_name: 'Tech Lee', meta: { ticket: 'RT-1034', phone: '626-555-0099', amount: 145, paid: true } },
+    { id: 35, type: 'todo', content: 'Reorganize demo display area - new shelves arriving today', display_emoji: '\u{270F}\uFE0F', creator_name: 'Tech Lee' },
+    { id: 36, type: 'customer_followup', content: 'Mr. Lopez pickup iPhone 13 - screen + battery combo', display_emoji: '\u{1F4DE}', due_date: '2026-05-01', due_time: '13:00', status: 'done', done_by: 'Tech Lee', creator_name: 'Tech Lee', meta: { ticket: 'RT-1036', phone: '626-555-0455', amount: 245, paid: true } },
+    { id: 45, type: 'repair_pending', content: 'MacBook Pro 14" keyboard stuck - diagnostics in progress', display_emoji: '\u{1F527}', status: 'pending', creator_name: 'Mike', meta: { ticket: 'RT-1045', phone: '626-555-0776', amount: 220, paid: false } },
+    { id: 33, type: 'todo', content: 'Weekend inventory count Saturday - prepare scanners', display_emoji: '\u{270F}\uFE0F', creator_name: 'Andy' }
+  ],
+
+  notices: [
+    { display_emoji: '\u{1F4E2}', content: 'Sunday HQ training at 10 AM - all staff must attend', priority: 2 },
+    { display_emoji: '\u{1F3AF}', content: 'New employee bonus plan launching May 1 - details in WeChat group', priority: 1 },
+    { display_emoji: '\u{1F4CA}', content: 'Q2 sales contest starts Monday: top performer wins iPad Pro', priority: 1 }
+  ],
+
+  opening_sop: [
+    { item_label: 'Unlock door & disable alarm', checked: 1 },
+    { item_label: 'Turn on lights and signage', checked: 1 },
+    { item_label: 'Boot Clover POS & verify network', checked: 1 },
+    { item_label: 'Count register cash ($200 float)', checked: 1 },
+    { item_label: 'Review yesterday repair tickets', checked: 1 },
+    { item_label: 'Check incoming deliveries', checked: 1 },
+    { item_label: 'Clean front counter & repair desk', checked: 1 },
+    { item_label: 'Inspect demo phones & price tags', checked: 0 },
+    { item_label: 'Test demo phones charged', checked: 0 },
+    { item_label: 'Read yesterday handoff notes', checked: 1 }
+  ],
+
+  closing_sop: [
+    { item_label: 'Reconcile cash drawer', checked: 0 },
+    { item_label: 'Print daily Z-report from Clover', checked: 0 },
+    { item_label: 'Lock all repair tickets in safe', checked: 0 },
+    { item_label: 'Update handoff notes for tomorrow', checked: 0 },
+    { item_label: 'Power off demo phones, plug to charge', checked: 0 },
+    { item_label: 'Empty trash & quick clean', checked: 0 },
+    { item_label: 'Turn off lights & signage', checked: 0 },
+    { item_label: 'Set alarm & lock front door', checked: 0 }
+  ],
+
+  daily_combos: [
+    { emoji: '\u{1F4F6}', title: 'T-Mobile 无限套餐', desc: '新号开户 · 送手机壳+钢化膜', price: '$50/月' },
+    { emoji: '\u{1F4E1}', title: 'AT&T 家庭套餐', desc: '4条线 · 无限流量+WiFi热点', price: '$35/线' },
+    { emoji: '\u{1F30F}', title: 'Mint Mobile 年付', desc: '15GB/月 · 首3月 $15/月', price: '$15/月' },
+    { emoji: '\u{2B50}', title: 'Cricket 开户特惠', desc: '新号立减 $50 · 无合约', price: '$30/月' }
+  ],
+
+  accessories: [
+    { emoji: '\u{1F3A7}', title: 'AirPods Pro 2 代', desc: '原装正品 · 全国联保', price: '$229' },
+    { emoji: '\u{1F50B}', title: 'MagSafe 充电器', desc: '20W 快充 · iPhone 12+', price: '$39' },
+    { emoji: '\u{1F6E1}\uFE0F', title: '全包防摔手机壳', desc: '军用级防护 · 多型号', price: '$25' },
+    { emoji: '\u{1F4F1}', title: '钢化膜 买二送一', desc: '9H硬度 · iPhone/Samsung', price: '$15' }
+  ],
+
+  reviews: {
+    google: { rating: 4.6, total: 153 },
+    yelp: { rating: 4.5, total: 295 },
+    wechat: { total: 5555 }
+  },
+
+  sales: { daily_revenue: 3120, daily_orders: 21, monthly_revenue: 51800 },
+
+  revenue_breakdown: { repair: 22500, activation: 16800, accessory: 8900, sales: 3600 },
+
+  // All 9 real stores
+  stores_all: [
+    { code: 'monterey_park', display_name_en: 'Monterey Park', display_name_cn: '蒙市店', phone: '626-598-1888', address: '188 E Garvey Ave #F, Monterey Park, CA 91755' },
+    { code: 'san_gabriel', display_name_en: 'San Gabriel', display_name_cn: '圣盖博店', phone: '626-800-2030', address: '311 E Valley Blvd #101, San Gabriel, CA 91776' },
+    { code: 'rowland_heights', display_name_en: 'Rowland Heights', display_name_cn: '罗兰岗店', phone: '909-789-0999', address: '1330 S Fullerton Rd, Ste#201, Rowland Heights, CA 91748' },
+    { code: 'arcadia_1', display_name_en: 'Arcadia 1', display_name_cn: '亚凯迪亚1店', phone: '626-600-8090', address: '101 E Huntington Dr, Arcadia, CA 91006' },
+    { code: 'arcadia_2', display_name_en: 'Arcadia 2', display_name_cn: '亚凯迪亚2店', phone: '626-777-9188', address: '918 S Baldwin Ave, Arcadia, CA 91007' },
+    { code: 'irvine', display_name_en: 'Irvine', display_name_cn: '尔湾店', phone: '949-550-8000', address: '15333 Culver Dr, #800, Unit#C, Irvine, CA 92604' },
+    { code: 'rancho_cucamonga', display_name_en: 'Rancho Cucamonga', display_name_cn: '库卡蒙格店', phone: '909-345-1000', address: '9775 Baseline Rd, #106, Rancho Cucamonga, CA 91730' },
+    { code: 'alhambra', display_name_en: 'Alhambra', display_name_cn: '阿罕布拉店', phone: '626-800-2020', address: '326 W Valley Blvd, Alhambra, CA 91803' },
+    { code: 'las_vegas', display_name_en: 'Las Vegas', display_name_cn: '拉斯维加斯店', phone: '702-779-8888', address: '4598 Spring Mountain Rd, Las Vegas, NV 89102' }
+  ],
+
+  rankings: [
+    { code: 'san_gabriel', display_name_en: 'San Gabriel', daily_revenue: 3120, daily_orders: 21 },
+    { code: 'monterey_park', display_name_en: 'Monterey Park', daily_revenue: 2840, daily_orders: 18 },
+    { code: 'arcadia_1', display_name_en: 'Arcadia 1', daily_revenue: 2210, daily_orders: 15 },
+    { code: 'alhambra', display_name_en: 'Alhambra', daily_revenue: 1980, daily_orders: 13 },
+    { code: 'arcadia_2', display_name_en: 'Arcadia 2', daily_revenue: 1890, daily_orders: 12 },
+    { code: 'rowland_heights', display_name_en: 'Rowland Heights', daily_revenue: 1750, daily_orders: 11 },
+    { code: 'irvine', display_name_en: 'Irvine', daily_revenue: 1620, daily_orders: 10 },
+    { code: 'las_vegas', display_name_en: 'Las Vegas', daily_revenue: 1340, daily_orders: 9 },
+    { code: 'rancho_cucamonga', display_name_en: 'Rancho Cucamonga', daily_revenue: 1180, daily_orders: 8 }
+  ],
+
+  month_champion: { display_name_en: 'San Gabriel', total: 51800 }
+};
+
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  data: null,
+  lastUpdate: null,
+  bottomSections: [],
+  bottomIndex: 0
+};
+
+// ============================================================
+// CLOCK & MODE
+// ============================================================
+function updateClock() {
+  const now = new Date();
+  const pstNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+
+  const hh = String(pstNow.getHours()).padStart(2, '0');
+  const mm = String(pstNow.getMinutes()).padStart(2, '0');
+  const ss = String(pstNow.getSeconds()).padStart(2, '0');
+  document.getElementById('clockDisplay').textContent = hh + ':' + mm + ':' + ss;
+
+  const yyyy = pstNow.getFullYear();
+  const mo = String(pstNow.getMonth() + 1).padStart(2, '0');
+  const dd = String(pstNow.getDate()).padStart(2, '0');
+  const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  const wd = weekdays[pstNow.getDay()];
+  document.getElementById('dateDisplay').textContent = yyyy + '.' + mo + '.' + dd + ' ' + wd;
+
+  const totalMin = pstNow.getHours() * 60 + pstNow.getMinutes();
+  let mode = '营业中 · 实时';
+  if (totalMin >= 9 * 60 + 30 && totalMin < 10 * 60) mode = '准备开店 · 开店中';
+  else if (totalMin >= 18 * 60 + 30 && totalMin < 19 * 60) mode = '准备打烊 · 收尾中';
+  else if (totalMin >= 19 * 60 || totalMin < 9 * 60 + 30) mode = '已打烊';
+  document.getElementById('modeLabel').textContent = mode;
+
+  const lastDay = new Date(pstNow.getFullYear(), pstNow.getMonth() + 1, 0).getDate();
+  document.getElementById('dayOfMonth').textContent = '第' + pstNow.getDate() + '天 / ' + lastDay + '天';
+}
+
+setInterval(updateClock, 1000);
+
+// (Bottom panel rotation removed — all sections are now fixed)
+
+// ============================================================
+// DATA LOADING
+// ============================================================
+async function loadData() {
+  try {
+    setConnectionStatus('loading');
+    const resp = await fetch(CONFIG.API_BASE + '/api/dashboard?store=' + CONFIG.STORE_CODE);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const live = await resp.json();
+
+    // Merge live Clover data into MOCK_DATA structure
+    // (keeps items, notices, SOP, combos from MOCK_DATA; replaces revenue/rankings with live)
+    const merged = Object.assign({}, MOCK_DATA);
+    merged.store = Object.assign({}, MOCK_DATA.store, live.store);
+    merged.sales = live.sales;
+    merged.revenue_breakdown = live.revenue_breakdown;
+    merged.rankings = live.rankings;
+    merged.month_champion = live.month_champion;
+    if (live.employee_rankings) merged.employee_rankings = live.employee_rankings;
+
+    // Inject today's schedule into shift data
+    const todayStaff = getTodaySchedule(CONFIG.STORE_CODE);
+    merged.shift = {
+      current: getCurrentShiftName(),
+      hours: '10:00 - 19:00',
+      next_shift: '',
+      employees: todayStaff.map(function(name) {
+        return { name: name, role: '员工', initials: name.charAt(0).toUpperCase(), color: getEmpColor(name) };
+      })
+    };
+
+    state.data = merged;
+    state.lastUpdate = new Date();
+    render();
+    setConnectionStatus('connected');
+    // (fixed layout, no rotation)
+  } catch(e) {
+    console.error('API load failed:', e);
+    // Fallback: use MOCK_DATA if API fails
+    if (!state.data) {
+      state.data = MOCK_DATA;
+      // Still inject schedule
+      const todayStaff = getTodaySchedule(CONFIG.STORE_CODE);
+      state.data.shift = {
+        current: getCurrentShiftName(),
+        hours: '10:00 - 19:00',
+        next_shift: '',
+        employees: todayStaff.map(function(name) {
+          return { name: name, role: '员工', initials: name.charAt(0).toUpperCase(), color: getEmpColor(name) };
+        })
+      };
+      state.lastUpdate = new Date();
+      render();
+    }
+    setConnectionStatus('error');
+    // (fixed layout, no rotation)
+  }
+}
+
+function getCurrentShiftName() {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  const h = now.getHours();
+  if (h < 10) return '开店准备';
+  if (h < 14) return '早班';
+  if (h < 19) return '午班';
+  return '已打烊';
+}
+
+function getEmpColor(name) {
+  var colors = ['#2D8FFF','#00d4ff','#a855f7','#2ee885','#ff8a3d','#ffc933','#ff5577','#5BAEFF'];
+  var hash = 0;
+  for (var i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+function setConnectionStatus(status) {
+  const dot = document.getElementById('connStatus');
+  const text = document.getElementById('connText');
+  dot.className = 'footer-stat-dot';
+  if (status === 'connected') text.textContent = '已连接';
+  else if (status === 'error') { dot.classList.add('error'); text.textContent = '连接失败'; }
+  else { dot.classList.add('warn'); text.textContent = '重新连接中'; }
+
+  if (state.lastUpdate) {
+    const t = state.lastUpdate;
+    document.getElementById('lastUpdate').textContent =
+      '更新: ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+  }
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render() {
+  if (!state.data) return;
+  const d = state.data;
+
+  document.getElementById('storeName').textContent = d.store.display_name_en || d.store.name;
+
+  renderShift(d.shift || {});
+  renderRevenue(d);
+  renderPipeline(d.pipeline || {});
+  renderNoticeStrip(d.notices || []);
+  renderBoard(d.items || []);
+  renderRecommendations(d);
+  renderReviewsFixed(d.reviews || {});
+  renderRankingsFixed(d.rankings || [], d.store.code);
+
+  VoiceTriggers.evaluate(d);
+}
+
+// ============================================================
+// RENDER: Shift Status
+// ============================================================
+function renderShift(shift) {
+  const el = document.getElementById('shiftEmployees');
+  const employees = shift.employees || [];
+
+  el.innerHTML = employees.map(emp =>
+    '<div class="shift-emp">' +
+      '<div class="shift-emp-avatar" style="background:' + (emp.color || '#2D8FFF') + '">' + escapeHtml(emp.initials) + '</div>' +
+      '<div>' +
+        '<div class="shift-emp-name">' + escapeHtml(emp.name) + '</div>' +
+        '<div class="shift-emp-role">' + escapeHtml(emp.role) + '</div>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+
+  document.getElementById('shiftHours').textContent = shift.hours || '--:-- - --:--';
+  document.getElementById('shiftNext').textContent = shift.next_shift ? '下一班: ' + shift.next_shift : '';
+}
+
+// ============================================================
+// RENDER: Revenue
+// ============================================================
+function renderRevenue(d) {
+  const target = d.store.monthly_target || 65000;
+  const breakdown = d.revenue_breakdown || { repair: 0, activation: 0, accessory: 0, sales: 0 };
+  const monthly = d.sales.monthly_revenue || 0;
+  const dailyRev = d.sales.daily_revenue || 0;
+  const dailyOrd = d.sales.daily_orders || 0;
+  const avgOrder = dailyOrd > 0 ? Math.round(dailyRev / dailyOrd) : 0;
+
+  // Daily hero
+  document.getElementById('dailyRevenue').textContent = formatNumber(dailyRev);
+  document.getElementById('dailyOrders').textContent = dailyOrd;
+  document.getElementById('dailyAvg').textContent = formatNumber(avgOrder);
+
+  // Monthly progress
+  document.getElementById('totalRevenue').textContent = formatNumber(monthly);
+  document.getElementById('totalTarget').textContent = '/ $' + formatNumber(target);
+  const totalPct = target > 0 ? Math.min(100, (monthly / target) * 100) : 0;
+  document.getElementById('totalBar').style.width = totalPct + '%';
+  document.getElementById('totalPct').textContent = totalPct.toFixed(1) + '%';
+
+  // Category breakdown (daily)
+  const cats = [
+    { key: 'repair', current: breakdown.repair },
+    { key: 'activation', current: breakdown.activation },
+    { key: 'accessory', current: breakdown.accessory },
+    { key: 'sales', current: breakdown.sales }
+  ];
+
+  const dailyTotal = cats.reduce((s, c) => s + c.current, 0);
+  cats.forEach(c => {
+    const pct = dailyTotal > 0 ? Math.round((c.current / dailyTotal) * 100) : 0;
+    document.getElementById(c.key + 'Amt').textContent = '$' + formatNumber(c.current);
+    document.getElementById(c.key + 'Pct').textContent = pct + '%';
+  });
+}
+
+// ============================================================
+// RENDER: Pipeline
+// ============================================================
+function renderPipeline(pipeline) {
+  document.getElementById('pipeIntake').textContent = pipeline.intake || 0;
+  document.getElementById('pipeRepairing').textContent = pipeline.repairing || 0;
+  document.getElementById('pipeQC').textContent = pipeline.qc || 0;
+  document.getElementById('pipeReady').textContent = pipeline.ready || 0;
+
+  const total = (pipeline.intake || 0) + (pipeline.repairing || 0) + (pipeline.qc || 0) + (pipeline.ready || 0);
+  document.getElementById('pipeTotal').textContent = total;
+}
+
+// ============================================================
+// RENDER: Notice Strip
+// ============================================================
+function renderNoticeStrip(notices) {
+  const track = document.getElementById('noticeTrack');
+  if (!notices.length) {
+    track.innerHTML = '<span class="notice-emoji">\u{1F4E2}</span><span>暂无通知</span>';
+    return;
+  }
+  const single = notices.map(n =>
+    '<span class="notice-emoji">' + (n.display_emoji || '\u{1F4E2}') + '</span>' +
+    '<span>' + escapeHtml(n.content) + '</span>'
+  ).join('<span class="notice-sep">\u2605</span>');
+  track.innerHTML = single + '<span class="notice-sep">\u2605</span>' + single + '<span class="notice-sep">\u2605</span>';
+}
+
+// ============================================================
+// RENDER: Board (grouped by type)
+// ============================================================
+function renderBoard(items) {
+  const content = document.getElementById('boardContent');
+  document.getElementById('itemCount').textContent = items.length + ' 项';
+
+  if (!items.length) {
+    content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-tertiary);font-size:14px;">' +
+      '<div style="font-size:42px;margin-bottom:10px;opacity:0.4;">\u{1F4CB}</div>' +
+      '<div>今日暂无事项</div>' +
+      '<div style="margin-top:8px;font-size:11px;">通过 Telegram Bot 添加</div></div>';
+    return;
+  }
+
+  // Compute urgency and add to items
+  const enriched = items.map(item => {
+    const urgency = computeUrgency(item);
+    return Object.assign({}, item, { __urgency: urgency });
+  });
+
+  // Count urgent items
+  const urgentItems = enriched.filter(i => i.status !== 'done' && (i.__urgency.tier === 'overdue' || i.__urgency.tier === 'imminent'));
+  const urgentBadge = document.getElementById('urgentCount');
+  if (urgentItems.length > 0) {
+    urgentBadge.textContent = urgentItems.length + ' 紧急';
+    urgentBadge.style.display = '';
+  } else {
+    urgentBadge.style.display = 'none';
+  }
+
+  // Group items by category
+  const groups = {
+    deliveries: { label: '到货/物流', icon: '\u{1F4E6}', items: [] },
+    handoffs: { label: '交班事项', icon: '\u{1F504}', items: [] },
+    tasks: { label: '待办任务', icon: '\u{270F}\uFE0F', items: [] }
+  };
+
+  enriched.forEach(item => {
+    if (item.type === 'incoming_inventory') groups.deliveries.items.push(item);
+    else if (item.type === 'handoff') groups.handoffs.items.push(item);
+    else groups.tasks.items.push(item);
+  });
+
+  // Sort each group: non-done first, then by urgency, then by id desc
+  const URGENCY_ORDER = { overdue: 0, imminent: 1, soon: 2, normal: 3, none: 4 };
+  Object.values(groups).forEach(g => {
+    g.items.sort((a, b) => {
+      const aDone = a.status === 'done' ? 1 : 0;
+      const bDone = b.status === 'done' ? 1 : 0;
+      if (aDone !== bDone) return aDone - bDone;
+      const aUrg = URGENCY_ORDER[a.__urgency.tier] || 99;
+      const bUrg = URGENCY_ORDER[b.__urgency.tier] || 99;
+      if (aUrg !== bUrg) return aUrg - bUrg;
+      return (b.id || 0) - (a.id || 0);
+    });
+  });
+
+  // Render order: tasks first, then deliveries, handoffs
+  const order = ['tasks', 'deliveries', 'handoffs'];
+  let html = '';
+
+  order.forEach(key => {
+    const g = groups[key];
+    if (g.items.length === 0) return;
+
+    html += '<div class="board-group ' + key + '">';
+    html += '<div class="board-group-header">';
+    html += '<span class="board-group-icon">' + g.icon + '</span>';
+    html += '<span class="board-group-label">' + g.label + '</span>';
+    html += '<span class="board-group-count">' + g.items.length + '</span>';
+    html += '</div>';
+    html += '<div class="board-items">';
+
+    g.items.forEach(item => {
+      const urg = item.__urgency;
+      let cssClass = '';
+      if (item.status === 'done') cssClass = 'is-done';
+      else if (item.urgent || item.priority === 'urgent') cssClass = 'urgent-alert';
+      else if (urg.tier === 'overdue') cssClass = 'urgent-alert';
+      else if (urg.tier === 'imminent') cssClass = 'due-imminent';
+      else if (urg.tier === 'soon') cssClass = 'due-soon';
+
+      // Right-side info: time badge or status
+      let rightInfo = '';
+      if (item.status === 'done') {
+        rightInfo = '<span class="item-time-remaining done">\u2713 已完成</span>';
+      } else if (urg.tier === 'overdue') {
+        rightInfo = '<span class="item-time-remaining overdue">已逾期</span>';
+      } else if (item.due_time && urg.tier !== 'none') {
+        const tierClass = urg.tier;
+        rightInfo = '<span class="item-time-remaining ' + tierClass + '">\u23F1 ' + item.due_time + '</span>';
+        if (urg.label) rightInfo += '<span style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary)">' + urg.label + '</span>';
+      } else if (item.due_date && !item.due_time) {
+        rightInfo = '<span class="item-time-remaining normal">' + formatDueDate(item.due_date) + '</span>';
+      }
+
+      // Meta chips
+      let metaChips = '';
+      if (item.meta) {
+        const m = item.meta;
+        const chips = [];
+        if (m.ticket) chips.push('<span class="meta-chip ticket">\u{1F3AB} ' + escapeHtml(m.ticket) + '</span>');
+        if (m.phone) chips.push('<span class="meta-chip phone">\u{1F4F1} ' + escapeHtml(m.phone) + '</span>');
+        if (m.amount != null) {
+          const cls = m.paid ? 'amount' : 'unpaid';
+          const lbl = m.paid ? '已付' : '未付';
+          chips.push('<span class="meta-chip ' + cls + '">$' + m.amount + ' \u00B7 ' + lbl + '</span>');
+        }
+        if (m.source) chips.push('<span class="meta-chip">\u{1F4E6} ' + escapeHtml(m.source) + '</span>');
+        if (chips.length > 0) metaChips = '<div class="item-structured-meta">' + chips.join('') + '</div>';
+      }
+
+      html += '<div class="board-item ' + cssClass + '">';
+      html += '<div class="item-emoji">' + (item.display_emoji || '\u{1F4CC}') + '</div>';
+      html += '<div class="item-content">';
+      html += '<div class="item-text">' + escapeHtml(item.content) + '</div>';
+      html += '<div class="item-meta">';
+      html += '<span class="item-id">#' + item.id + '</span>';
+      if (item.creator_name) html += '<span style="color:var(--text-dim)">' + escapeHtml(item.creator_name) + '</span>';
+      html += '</div>';
+      html += metaChips;
+      html += '</div>';
+      html += '<div class="item-right-info">' + rightInfo + '</div>';
+      html += '</div>';
+    });
+
+    html += '</div></div>';
+  });
+
+  content.innerHTML = html;
+}
+
+// ============================================================
+// RENDER: Fixed Rankings Bar (always visible)
+// ============================================================
+function renderRankingsFixed(rankings, currentCode) {
+  const el = document.getElementById('rankingsFixed');
+  if (!rankings.length) { el.innerHTML = ''; return; }
+
+  // Always show bar chart for all 8 stores
+  const maxRev = Math.max(...rankings.map(r => r.daily_revenue || 0), 1);
+  el.innerHTML = rankings.map((r, i) => {
+    const isCurrent = r.code === currentCode;
+    const pct = maxRev > 0 ? ((r.daily_revenue || 0) / maxRev * 100) : 0;
+    const cls = isCurrent ? 'rank-bar-item is-current' : 'rank-bar-item';
+    return '<div class="' + cls + '">' +
+      '<div class="rank-bar-name">' + escapeHtml(r.display_name_en || r.name) + '</div>' +
+      '<div class="rank-bar-track"><div class="rank-bar-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="rank-bar-amount">$' + formatNumber(r.daily_revenue || 0) + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ============================================================
+// RENDER: Reviews (Fixed) + Tracking
+// ============================================================
+var REVIEW_LOGOS = {
+  google: '<img src="google-logo.png" alt="Google Reviews">',
+  yelp: '<img src="yelp-logo.png" alt="Yelp Reviews">',
+  wechat: '<img src="wechat-logo.png" alt="WeChat">'
+};
+
+// Review tracking with history
+var ReviewTracker = {
+  _key: 'ifixforu_review_baselines',
+  _load: function() {
+    try { return JSON.parse(localStorage.getItem(this._key)) || {}; } catch(e) { return {}; }
+  },
+  _save: function(data) { localStorage.setItem(this._key, JSON.stringify(data)); },
+  _todayStr: function() {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' })).toISOString().split('T')[0];
+  },
+  // Track and return full status
+  track: function(platform, currentTotal) {
+    var data = this._load();
+    var today = this._todayStr();
+    if (!data[platform]) data[platform] = {};
+    var p = data[platform];
+
+    // First time ever — record as initial baseline
+    if (!p.initial_count) {
+      p.initial_count = currentTotal;
+      p.initial_date = today;
+    }
+
+    // Daily baseline: reset each new day
+    if (p.day_date !== today) {
+      p.day_baseline = currentTotal;
+      p.day_date = today;
+    }
+
+    // Track last increase date
+    if (p.last_known_count && currentTotal > p.last_known_count) {
+      p.last_increase_date = today;
+      p.last_increase_amount = currentTotal - p.last_known_count;
+    }
+    if (!p.last_increase_date) p.last_increase_date = today;
+
+    p.last_known_count = currentTotal;
+    this._save(data);
+
+    var todayDelta = Math.max(0, currentTotal - (p.day_baseline || currentTotal));
+
+    // Days since last new review
+    var lastDate = new Date(p.last_increase_date + 'T12:00:00');
+    var nowDate = new Date(today + 'T12:00:00');
+    var daysSince = Math.floor((nowDate - lastDate) / 86400000);
+
+    return {
+      todayDelta: todayDelta,
+      daysSince: daysSince,
+      baselineCount: p.initial_count,
+      baselineDate: p.initial_date
+    };
+  }
+};
+
+// Review targets (configurable)
+var REVIEW_TARGETS = {
+  google: { monthly: 10, label: '月目标 10 条' },
+  yelp:   { monthly: 5, label: '月目标 5 条' },
+  wechat: { monthly: 200, label: '月目标 +200' }
+};
+
+function renderReviewsFixed(reviews) {
+  var el = document.getElementById('reviewsFixed');
+  var g = reviews.google || { rating: 0, total: 0 };
+  var y = reviews.yelp || { rating: 0, total: 0 };
+  var w = reviews.wechat || { total: 0 };
+
+  function fmtDate(d) { if (!d) return ''; var p = d.split('-'); return parseInt(p[1]) + '/' + parseInt(p[2]); }
+
+  function growthHtml(t) {
+    if (t.todayDelta > 0) {
+      return '<span class="review-growth"><span class="growth-arrow">▲</span>今日+' + t.todayDelta + '</span>';
+    }
+    return '<span class="review-growth no-new">今日无新增，请加油</span>';
+  }
+
+  function baseHtml(t) {
+    if (!t.baselineDate) return '';
+    return '<div class="rv-baseline">' + fmtDate(t.baselineDate) + ' 起: ' + formatNumber(t.baselineCount) + '</div>';
+  }
+
+  var gT = ReviewTracker.track('google', g.total);
+  var yT = ReviewTracker.track('yelp', y.total);
+  var wT = ReviewTracker.track('wechat', w.total);
+
+  function cardHtml(platform, logo, count, tracker, subtitle) {
+    return '<div class="review-card ' + platform + '">' +
+      '<div class="review-logo">' + logo + '</div>' +
+      '<div class="review-info">' +
+        '<div class="review-platform">' + subtitle + '</div>' +
+        '<div class="review-count-row">' +
+          '<span class="review-count">' + formatNumber(count) + '</span>' +
+          growthHtml(tracker) +
+        '</div>' +
+        baseHtml(tracker) +
+      '</div>' +
+    '</div>';
+  }
+
+  el.innerHTML =
+    cardHtml('google', REVIEW_LOGOS.google, g.total, gT, 'GOOGLE REVIEWS') +
+    cardHtml('yelp', REVIEW_LOGOS.yelp, y.total, yT, 'YELP REVIEWS') +
+    cardHtml('wechat', REVIEW_LOGOS.wechat, w.total, wT, '微信好友');
+}
+
+// ============================================================
+// RENDER: Bottom - Rankings
+// ============================================================
+function renderBottomRankings(rankings, currentCode, champion) {
+  const el = document.getElementById('bottom-rankings');
+  if (!rankings.length) { el.innerHTML = '<div style="text-align:center;color:var(--text-tertiary);padding:20px;">暂无排名数据</div>'; return; }
+
+  // Show top 5 only for compact view
+  const top = rankings.slice(0, 5);
+
+  let rankHtml = '<div class="rank-list-card">' +
+    '<div class="rank-card-header">' +
+      '<div class="rank-card-title">门店排名 · 今日</div>' +
+      '<div class="rank-card-badge">实时 · ' + rankings.length + ' 家门店</div>' +
+    '</div>' +
+    '<div class="rank-list">';
+
+  rankHtml += top.map((r, i) => {
+    const isCurrent = r.code === currentCode;
+    const topClass = i === 0 ? 'is-top1' : i === 1 ? 'is-top2' : i === 2 ? 'is-top3' : '';
+    const currentClass = isCurrent ? 'is-current' : '';
+    const nameClass = isCurrent ? 'rank-name-current' : '';
+    return '<div class="rank-item ' + topClass + ' ' + currentClass + '">' +
+      '<div class="rank-num">' + (i + 1) + '</div>' +
+      '<div><div class="rank-name ' + nameClass + '">' + escapeHtml(r.display_name_en || r.name) + '</div>' +
+        '<div class="rank-orders">' + (r.daily_orders || 0) + ' 单</div></div>' +
+      '<div class="rank-amount">$' + formatNumber(r.daily_revenue || 0) + '</div>' +
+    '</div>';
+  }).join('');
+
+  rankHtml += '</div></div>';
+
+  // Champion
+  let champHtml = '';
+  if (champion) {
+    champHtml = '<div class="champion-box">' +
+      '<div class="champion-content">' +
+        '<div class="champion-eyebrow">\u2605 月度冠军 \u2605</div>' +
+        '<div class="champion-trophy">\u{1F3C6}</div>' +
+        '<div class="champion-name">' + escapeHtml(champion.display_name_en || '-') + '</div>' +
+        '<div class="champion-amount">$' + formatNumber(champion.total || 0) + '</div>' +
+        '<div class="champion-label">本月最佳门店</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  el.innerHTML = '<div class="rankings-row">' + rankHtml + champHtml + '</div>';
+}
+
+// ============================================================
+// RENDER: Bottom - Employee Rankings
+// ============================================================
+function renderBottomEmployees(empRankings) {
+  const el = document.getElementById('bottom-employees');
+  if (!empRankings || !empRankings.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text-tertiary);padding:20px;">暂无员工数据</div>';
+    return;
+  }
+
+  const top = empRankings.slice(0, 8);
+  let html = '<div class="rank-list-card">' +
+    '<div class="rank-card-header">' +
+      '<div class="rank-card-title">员工业绩 · 今日</div>' +
+      '<div class="rank-card-badge">Clover 实时 · ' + empRankings.length + ' 人</div>' +
+    '</div>' +
+    '<div class="emp-rank-grid">';
+
+  html += top.map((emp, i) =>
+    '<div class="emp-rank-item">' +
+      '<div class="emp-rank-num">' + (i + 1) + '</div>' +
+      '<div class="emp-rank-name">' + escapeHtml(emp.name) + '</div>' +
+      '<div class="emp-rank-stats">' +
+        '<div class="emp-rank-revenue">$' + formatNumber(emp.revenue || 0) + '</div>' +
+        '<div class="emp-rank-orders">' + (emp.orders || 0) + ' 单</div>' +
+      '</div>' +
+    '</div>'
+  ).join('');
+
+  html += '</div></div>';
+  el.innerHTML = html;
+}
+
+// ============================================================
+// RENDER: Bottom - SOP
+// ============================================================
+function renderBottomSOP(d) {
+  const el = document.getElementById('bottom-sop');
+  const timeMode = getCurrentTimeMode();
+  const checklist = timeMode === 'closing' ? (d.closing_sop || []) : (d.opening_sop || []);
+  const label = timeMode === 'closing' ? '闭店流程' : '开店流程';
+
+  if (!checklist.length) {
+    el.innerHTML = '<div class="sop-compact"><div class="rank-card-header"><div class="rank-card-title">' + label + '</div></div>' +
+      '<div style="color:var(--text-tertiary);text-align:center;padding:12px;">暂无流程事项</div></div>';
+    return;
+  }
+
+  const checked = checklist.filter(c => c.checked).length;
+  const pct = (checked / checklist.length) * 100;
+
+  el.innerHTML = '<div class="sop-compact">' +
+    '<div class="rank-card-header">' +
+      '<div class="rank-card-title">' + label + '</div>' +
+      '<div class="rank-card-badge">' + checked + '/' + checklist.length + '</div>' +
+    '</div>' +
+    '<div class="sop-list">' + checklist.map(c =>
+      '<div class="sop-item ' + (c.checked ? 'checked' : '') + '">' +
+        '<div class="sop-check"></div>' +
+        '<div class="sop-label">' + escapeHtml(c.item_label) + '</div>' +
+      '</div>'
+    ).join('') + '</div>' +
+    '<div class="sop-progress">' +
+      '<div class="sop-progress-bar"><div class="sop-progress-fill" style="width:' + pct + '%"></div></div>' +
+      '<div class="sop-progress-text">' + checked + '/' + checklist.length + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// ============================================================
+// RENDER: Bottom - Combos & Accessories
+// ============================================================
+function renderBottomCombos(d) {
+  const el = document.getElementById('bottom-combos');
+  const combos = d.daily_combos || [];
+  const accs = d.accessories || [];
+  const all = combos.concat(accs);
+
+  if (!all.length) {
+    el.innerHTML = '<div style="text-align:center;color:var(--text-tertiary);padding:20px;">今日暂无促销</div>';
+    return;
+  }
+
+  // Show as a single row - take first 4
+  const show = all.slice(0, 4);
+  el.innerHTML = '<div class="sop-compact">' +
+    '<div class="rank-card-header">' +
+      '<div class="rank-card-title">今日推荐 & 优惠</div>' +
+      '<div class="rank-card-badge">' + all.length + ' 项优惠</div>' +
+    '</div>' +
+    '<div class="promo-list">' + show.map(c =>
+      '<div class="promo-item">' +
+        '<div class="promo-emoji">' + (c.emoji || '\u{1F381}') + '</div>' +
+        '<div class="promo-content">' +
+          '<div class="promo-title">' + escapeHtml(c.title) + '</div>' +
+          '<div class="promo-desc">' + escapeHtml(c.desc) + '</div>' +
+        '</div>' +
+        '<div class="promo-price">' + escapeHtml(c.price) + '</div>' +
+      '</div>'
+    ).join('') + '</div>' +
+  '</div>';
+}
+
+// ============================================================
+// RENDER: Recommendations (Carrier Plans + Hot Products)
+// ============================================================
+function renderRecommendations(d) {
+  var el = document.getElementById('recommendSection');
+  var combos = d.daily_combos || [];
+  var accs = d.accessories || [];
+
+  function itemHtml(item) {
+    return '<div class="recommend-item">' +
+      '<div class="recommend-item-emoji">' + (item.emoji || '\u{1F381}') + '</div>' +
+      '<div class="recommend-item-info">' +
+        '<div class="recommend-item-name">' + escapeHtml(item.title) + '</div>' +
+        '<div class="recommend-item-desc">' + escapeHtml(item.desc) + '</div>' +
+      '</div>' +
+      '<div class="recommend-item-price">' + escapeHtml(item.price) + '</div>' +
+    '</div>';
+  }
+
+  var leftHtml = '<div class="recommend-card carrier">' +
+    '<div class="recommend-header">' +
+      '<span class="recommend-icon">\u{1F4F1}</span>' +
+      '<span class="recommend-title">今日推荐运营商套餐</span>' +
+    '</div>' +
+    '<div class="recommend-list">' +
+      (combos.length ? combos.map(itemHtml).join('') : '<div style="text-align:center;color:var(--text-tertiary);padding:10px;font-size:14px;">暂无推荐</div>') +
+    '</div>' +
+  '</div>';
+
+  var rightHtml = '<div class="recommend-card products">' +
+    '<div class="recommend-header">' +
+      '<span class="recommend-icon">\u{1F525}</span>' +
+      '<span class="recommend-title">今日推荐热卖商品</span>' +
+    '</div>' +
+    '<div class="recommend-list">' +
+      (accs.length ? accs.map(itemHtml).join('') : '<div style="text-align:center;color:var(--text-tertiary);padding:10px;font-size:14px;">暂无推荐</div>') +
+    '</div>' +
+  '</div>';
+
+  el.innerHTML = leftHtml + rightHtml;
+}
+
+// ============================================================
+// URGENCY SYSTEM
+// ============================================================
+function computeUrgency(item) {
+  if (!item.due_time || !item.due_date) return { tier: 'none', label: '', mins: null };
+
+  const pstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  const today = pstNow.toISOString().split('T')[0];
+
+  const parts = item.due_time.split(':');
+  const dueDate = new Date(pstNow);
+  dueDate.setHours(parseInt(parts[0], 10));
+  dueDate.setMinutes(parseInt(parts[1], 10));
+  dueDate.setSeconds(0);
+
+  if (item.due_date > today) return { tier: 'normal', label: '明天', mins: null };
+  if (item.due_date < today) return { tier: 'overdue', label: '已逾期', mins: -999 };
+
+  const diffMs = dueDate - pstNow;
+  const diffMin = Math.round(diffMs / 60000);
+
+  if (diffMin < 0) return { tier: 'overdue', label: '已逾期', mins: diffMin };
+  if (diffMin <= 10) return { tier: 'imminent', label: diffMin + '分钟后', mins: diffMin };
+  if (diffMin <= 30) return { tier: 'soon', label: diffMin + '分钟后', mins: diffMin };
+  if (diffMin < 60) return { tier: 'normal', label: diffMin + '分钟后', mins: diffMin };
+  const hrs = Math.floor(diffMin / 60);
+  const mins = diffMin % 60;
+  return { tier: 'normal', label: hrs + '小时' + mins + '分后', mins: diffMin };
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function formatNumber(n) { return Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 }); }
+
+function formatDueDate(dateStr) {
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  if (dateStr === today) return '今天';
+  if (dateStr === tomorrow) return '明天';
+  return dateStr.substring(5).replace('-', '/');
+}
+
+function getTypeLabel(type) {
+  const labels = { handoff: '交班', incoming_inventory: '到货', todo: '待办', notice: '通知', customer_followup: '客户', repair_pending: '维修', general: '其他' };
+  return labels[type] || type.toUpperCase();
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+// ============================================================
+// VOICE ENGINE
+// ============================================================
+const VoiceEngine = {
+  enabled: false,
+  available: 'speechSynthesis' in window,
+  voice: null,
+  queue: [],
+  speaking: false,
+  cooldownMs: 5 * 60 * 1000,
+  spokenTimestamps: new Map(),
+
+  init() {
+    if (!this.available) return;
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = ['Google US English', 'Microsoft Aria Online (Natural)', 'Microsoft Jenny Online (Natural)', 'Samantha', 'Alex', 'Karen', 'Daniel'];
+      for (const name of preferred) {
+        const v = voices.find(x => x.name && x.name.includes(name));
+        if (v) { this.voice = v; break; }
+      }
+      if (!this.voice) this.voice = voices.find(v => v.lang === 'en-US') || voices[0];
+    };
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) window.speechSynthesis.onvoiceschanged = loadVoices;
+  },
+
+  enable() {
+    if (!this.available) { alert('Voice not supported'); return false; }
+    this.enabled = true;
+    const test = new SpeechSynthesisUtterance(' ');
+    test.volume = 0;
+    window.speechSynthesis.speak(test);
+    setTimeout(() => { this.speak('Voice alerts are now active.', { priority: 1, id: 'voice-enabled' }); }, 300);
+    this.updateButton();
+    return true;
+  },
+
+  disable() {
+    this.enabled = false;
+    window.speechSynthesis.cancel();
+    this.queue = [];
+    this.speaking = false;
+    this.updateButton();
+  },
+
+  speak(text, opts) {
+    opts = opts || {};
+    if (!this.enabled || !this.available) return;
+    const id = opts.id;
+    if (id) {
+      const last = this.spokenTimestamps.get(id);
+      if (last && (Date.now() - last) < this.cooldownMs) return;
+      this.spokenTimestamps.set(id, Date.now());
+    }
+    const priority = opts.priority || 0;
+    if (priority >= 2) {
+      window.speechSynthesis.cancel();
+      this.queue = [{ text, priority, id }];
+      this.speaking = false;
+    } else {
+      this.queue.push({ text, priority, id });
+      this.queue.sort((a, b) => b.priority - a.priority);
+    }
+    this.processQueue();
+  },
+
+  processQueue() {
+    if (this.speaking || this.queue.length === 0) return;
+    const item = this.queue.shift();
+    this.speaking = true;
+    this.updateButton(true);
+    const utter = new SpeechSynthesisUtterance(item.text);
+    if (this.voice) utter.voice = this.voice;
+    utter.lang = 'en-US';
+    utter.rate = 1.0;
+    utter.pitch = 1.0;
+    utter.volume = 0.85;
+    utter.onend = () => { this.speaking = false; this.updateButton(false); setTimeout(() => this.processQueue(), 250); };
+    utter.onerror = () => { this.speaking = false; this.updateButton(false); setTimeout(() => this.processQueue(), 250); };
+    window.speechSynthesis.speak(utter);
+  },
+
+  updateButton(speaking) {
+    const btn = document.getElementById('voiceBtn');
+    const icon = document.getElementById('voiceIcon');
+    const label = document.getElementById('voiceLabel');
+    if (!btn) return;
+    btn.classList.remove('active', 'speaking');
+    if (speaking) { btn.classList.add('speaking'); icon.textContent = '\u{1F50A}'; label.textContent = '播报中...'; }
+    else if (this.enabled) { btn.classList.add('active'); icon.textContent = '\u{1F50A}'; label.textContent = '语音已开'; }
+    else { icon.textContent = '\u{1F507}'; label.textContent = '开启语音'; }
+  }
+};
+
+function toggleVoice() {
+  if (VoiceEngine.enabled) VoiceEngine.disable();
+  else VoiceEngine.enable();
+}
+
+// ============================================================
+// VOICE TRIGGERS
+// ============================================================
+const VoiceTriggers = {
+  lastQuotaPct: { repair: 0, activation: 0, accessory: 0, sales: 0 },
+  lastRank: null,
+  notifiedItems: new Set(),
+
+  evaluate(d) {
+    if (!VoiceEngine.enabled) return;
+    this.checkQuotaAchievements(d);
+    this.checkRankChange(d);
+    this.checkUrgentItems(d);
+  },
+
+  checkQuotaAchievements(d) {
+    const target = d.store.monthly_target || 65000;
+    const split = CONFIG.QUOTA_SPLIT;
+    const breakdown = d.revenue_breakdown || {};
+    const cats = ['repair', 'activation', 'accessory', 'sales'];
+    const labels = { repair: 'Repair', activation: 'Activation', accessory: 'Accessory', sales: 'Sales' };
+    cats.forEach(c => {
+      const current = breakdown[c] || 0;
+      const catTarget = target * split[c];
+      const pct = catTarget > 0 ? (current / catTarget) * 100 : 0;
+      const last = this.lastQuotaPct[c];
+      if (last < 100 && pct >= 100) VoiceEngine.speak('Excellent! ' + labels[c] + ' quota achieved at 100%. Keep going for the bonus tier.', { priority: 1, id: 'quota-100-' + c });
+      else if (last < 50 && pct >= 50) VoiceEngine.speak(labels[c] + ' category at 50%. Halfway there.', { priority: 0, id: 'quota-50-' + c });
+      else if (last < 80 && pct >= 80) VoiceEngine.speak(labels[c] + ' at 80%. Push for the final stretch.', { priority: 0, id: 'quota-80-' + c });
+      this.lastQuotaPct[c] = pct;
+    });
+  },
+
+  checkRankChange(d) {
+    const rankings = d.rankings || [];
+    const currentRank = rankings.findIndex(r => r.code === d.store.code);
+    if (currentRank < 0) return;
+    if (this.lastRank !== null && currentRank < this.lastRank) {
+      if (currentRank === 0) VoiceEngine.speak('We just took the lead! Number one today.', { priority: 1, id: 'rank-1' });
+      else {
+        const positions = ['first', 'second', 'third', 'fourth', 'fifth'];
+        VoiceEngine.speak('Moving up to ' + (positions[currentRank] || currentRank + 1) + ' place.', { priority: 0, id: 'rank-' + currentRank });
+      }
+    }
+    this.lastRank = currentRank;
+  },
+
+  checkUrgentItems(d) {
+    (d.items || []).forEach(item => {
+      if (item.status === 'done') return;
+      const urg = computeUrgency(item);
+      if (urg.tier !== 'imminent') return;
+      const key = 'imminent-' + item.id;
+      if (this.notifiedItems.has(key)) return;
+      let msg;
+      if (item.type === 'customer_followup') msg = 'Customer arriving in ' + urg.mins + ' minutes. ' + stripEmoji(item.content) + '. Please confirm device is ready.';
+      else if (item.type === 'repair_pending') msg = 'Repair deadline in ' + urg.mins + ' minutes. ' + stripEmoji(item.content);
+      else msg = 'Task due in ' + urg.mins + ' minutes. ' + stripEmoji(item.content);
+      VoiceEngine.speak(msg, { priority: 2, id: key });
+      this.notifiedItems.add(key);
+    });
+  }
+};
+
+function stripEmoji(s) {
+  if (!s) return '';
+  return s.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').replace(/[\u2600-\u27BF]/g, '').trim();
+}
+
+// ============================================================
+// EMPLOYEE CLOCK-IN (called by Telegram webhook in production)
+// ============================================================
+function announceClockIn(employeeName, role, pendingTickets) {
+  let msg = 'Welcome ' + employeeName + '. You are on ' + role + ' today.';
+  if (pendingTickets && pendingTickets.length > 0) {
+    if (pendingTickets.length === 1) msg += ' You have one pending ticket from yesterday: ' + pendingTickets[0] + '.';
+    else msg += ' You have ' + pendingTickets.length + ' pending tickets from yesterday.';
+  }
+  msg += ' Have a great day.';
+  VoiceEngine.speak(msg, { priority: 1, id: 'clockin-' + employeeName + '-' + Date.now() });
+}
+
+window.testClockIn = function() {
+  announceClockIn('Andy', 'repair desk', ['Samsung S26 Ultra screen replacement', 'iPhone 14 battery', 'Pixel 8 diagnostic']);
+};
+
+window.testUrgent = function() {
+  VoiceEngine.speak('Customer arriving in 5 minutes for iPhone 15 Pro pickup. Please verify device is ready.', { priority: 2, id: 'test-urgent-' + Date.now() });
+};
+
+// ============================================================
+// AUTO-SCROLL for board items
+// ============================================================
+(function autoScrollSetup() {
+  const SCROLL_SPEED = 0.5;
+  const PAUSE_AT_ENDS = 3000;
+  let scrollDir = 1;
+  let pauseUntil = 0;
+
+  function autoScroll() {
+    const list = document.getElementById('boardContent');
+    if (!list) { requestAnimationFrame(autoScroll); return; }
+    const now = Date.now();
+    if (now < pauseUntil) { requestAnimationFrame(autoScroll); return; }
+    const maxScroll = list.scrollHeight - list.clientHeight;
+    if (maxScroll <= 0) { requestAnimationFrame(autoScroll); return; }
+    list.scrollTop += SCROLL_SPEED * scrollDir;
+    if (list.scrollTop >= maxScroll) { scrollDir = -1; pauseUntil = now + PAUSE_AT_ENDS; }
+    else if (list.scrollTop <= 0) { scrollDir = 1; pauseUntil = now + PAUSE_AT_ENDS; }
+    requestAnimationFrame(autoScroll);
+  }
+  requestAnimationFrame(autoScroll);
+})();
+
+// ============================================================
+// INIT
+// ============================================================
+updateClock();
+loadData();
+setInterval(loadData, CONFIG.REFRESH_INTERVAL);
+setInterval(() => { if (state.data) render(); }, 60 * 1000);
+VoiceEngine.init();
+
+// Prevent context menu on TV
+document.addEventListener('contextmenu', e => e.preventDefault());
+</script>
+
+<script>
+/* ============================================================
+   PORTRAIT MODE — 自适应缩放与旋转 (V2 干净算法)
+   
+   设计基准: 1080×1920 竖屏
+   - 任何画布大小都能等比缩放填满
+   - 自动判断需不需要旋转 90°
+   ============================================================ */
+(function() {
+  const DESIGN_W = 1080;
+  const DESIGN_H = 1920;
+  
+  function applyTransform() {
+    const app = document.getElementById('app');
+    if (!app) { setTimeout(applyTransform, 100); return; }
+    
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const isLandscape = vw > vh;
+    
+    let scale, transform;
+    
+    if (isLandscape) {
+      // 画布横屏 (Fire TV 默认),需要旋转 90° 显示竖屏内容
+      // 旋转后 1080(原宽) 占用画布的 vh 方向,1920(原高) 占用 vw 方向
+      scale = Math.min(vw / DESIGN_H, vh / DESIGN_W);
+      
+      const scaledW = DESIGN_W * scale;   // 缩放后内容的"原宽" (旋转后是高度方向)
+      const scaledH = DESIGN_H * scale;   // 缩放后内容的"原高" (旋转后是宽度方向)
+      
+      // 旋转 90° 后,内容占画布:水平 scaledH × 垂直 scaledW
+      // 居中位置:左边距 (vw - scaledH) / 2, 上边距 (vh - scaledW) / 2
+      // 但因为 transform-origin: top left 旋转,旋转后内容左上角变到右上方
+      // 我们需要:scale 先把 1080×1920 缩成 scaledW×scaledH
+      // 然后 rotate(90deg) 让它横躺 (左上角不动,内容向右下旋转,变成 scaledH 宽 scaledW 高)
+      // 但 rotate 是基于 top left 的,所以旋转后内容跑到了第四象限 (向下)
+      // 不,rotate(90deg) 顺时针 90° 后:原 (0,0) 还是 (0,0),原 (1080,0) 变成 (0,1080)
+      // 所以旋转后内容在第四象限,需要上移 1920 (原高) → 旋转后变成左移 1920
+      // 不对,让我重新想:
+      // top-left 原点旋转 90° 顺时针,(x,y) 映射到 (-y, x)
+      // 原内容 (0,0) → (0,0)  ✓
+      // 原内容 (1080,0) → (0, 1080)  ← 跑到下方了
+      // 原内容 (0,1920) → (-1920, 0)  ← 跑到画布外左边了
+      // 原内容 (1080, 1920) → (-1920, 1080)
+      // 所以旋转后内容占画布:x ∈ [-1920, 0], y ∈ [0, 1080]
+      // 我需要把它平移到 x ∈ [0, 1920], y ∈ [0, 1080]
+      // 即向右平移 1920 (原高度,缩放后是 scaledH)
+      
+      const tx = scaledH + (vw - scaledH) / 2;
+      const ty = (vh - scaledW) / 2;
+      
+      transform = `translate(${tx}px, ${ty}px) rotate(90deg) scale(${scale})`;
+    } else {
+      // 画布竖屏,直接缩放居中,不旋转
+      scale = Math.min(vw / DESIGN_W, vh / DESIGN_H);
+      const finalW = DESIGN_W * scale;
+      const finalH = DESIGN_H * scale;
+      const tx = (vw - finalW) / 2;
+      const ty = (vh - finalH) / 2;
+      
+      transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    }
+    
+    app.style.transformOrigin = 'top left';
+    app.style.transform = transform;
+    
+    console.log(`[Adaptive] viewport=${vw}x${vh}, isLandscape=${isLandscape}, scale=${scale.toFixed(3)}`);
+    console.log(`[Adaptive] transform=${transform}`);
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyTransform);
+  } else {
+    applyTransform();
+  }
+  window.addEventListener('resize', applyTransform);
+  window.addEventListener('orientationchange', applyTransform);
+  // WebView 加载完图片字体后再算一次,避免布局抖动
+  window.addEventListener('load', () => setTimeout(applyTransform, 200));
+})();
+</script>
+
+</body>
+</html>
