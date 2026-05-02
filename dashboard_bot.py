@@ -228,9 +228,21 @@ async def handle_natural_message(chat_id: str, msg_id: int, text: str, sender_na
     """自然语言消息 → 分类 → 存储 → 回复确认（带完成按钮）"""
     result = classify_message(text, sender_name)
 
+    # Claude 可能返回数组（一条消息包含多个任务）
+    if isinstance(result, list):
+        items = result
+    else:
+        items = [result]
+
+    for item in items:
+        await _process_one_item(chat_id, msg_id, item, sender_name)
+
+
+async def _process_one_item(chat_id: str, msg_id: int, result: dict, sender_name: str) -> None:
+    """处理单条分类结果"""
     # 跳过非工作内容
     if result.get("skip"):
-        logger.info("跳过非工作消息: %s", text[:50])
+        logger.info("跳过非工作消息")
         return
 
     # 补充 today 日期
