@@ -206,18 +206,6 @@ async def fetch_all_data(store_code: str = "san_gabriel") -> dict:
         })
     employee_rankings.sort(key=lambda x: x["revenue"], reverse=True)
 
-    # 看板 items 和 notices（从 SQLite）
-    try:
-        items = get_today_items(store_code)
-    except Exception as e:
-        logger.error("获取 board items 失败: %s", e)
-        items = []
-    try:
-        notices = get_active_notices(store_code)
-    except Exception as e:
-        logger.error("获取 notices 失败: %s", e)
-        notices = []
-
     return {
         "store": {
             "code": store_code,
@@ -239,29 +227,44 @@ async def fetch_all_data(store_code: str = "san_gabriel") -> dict:
         "month_champion": champion,
         "employee_rankings": employee_rankings,
         "store_count": len(STORES),
-        "items": items,
-        "notices": notices,
         "updated_at": now.isoformat(),
     }
 
 
 def get_data_sync(store_code: str = "san_gabriel") -> dict:
-    """同步封装异步抓取"""
+    """同步封装异步抓取，items/notices 始终实时查询"""
     global cached_data, cached_time
 
     with cache_lock:
         if cached_data and cached_time and (datetime.now().timestamp() - cached_time) < CACHE_TTL:
-            return cached_data
+            data = dict(cached_data)
+        else:
+            data = None
 
-    loop = asyncio.new_event_loop()
+    if data is None:
+        loop = asyncio.new_event_loop()
+        try:
+            data = loop.run_until_complete(fetch_all_data(store_code))
+        finally:
+            loop.close()
+
+        with cache_lock:
+            cached_data = data
+            cached_time = datetime.now().timestamp()
+
+        data = dict(data)
+
+    # items 和 notices 始终从 SQLite 实时读取（不走缓存）
     try:
-        data = loop.run_until_complete(fetch_all_data(store_code))
-    finally:
-        loop.close()
-
-    with cache_lock:
-        cached_data = data
-        cached_time = datetime.now().timestamp()
+        data["items"] = get_today_items(store_code)
+    except Exception as e:
+        logger.error("获取 board items 失败: %s", e)
+        data["items"] = []
+    try:
+        data["notices"] = get_active_notices(store_code)
+    except Exception as e:
+        logger.error("获取 notices 失败: %s", e)
+        data["notices"] = []
 
     return data
 
