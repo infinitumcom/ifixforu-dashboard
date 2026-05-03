@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>iFixForU Dashboard Admin</title>
+<title>iFixForU Admin</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
@@ -12,104 +12,119 @@
   --blue: #3b82f6; --green: #22c55e; --red: #ef4444; --yellow: #eab308;
   --orange: #f97316; --purple: #a855f7; --cyan: #06b6d4;
 }
-body { font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-a { color: var(--blue); text-decoration: none; }
+body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
 /* Header */
-.header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
-.header h1 { font-size: 20px; font-weight: 600; }
+.header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.header h1 { font-size: 18px; font-weight: 600; white-space: nowrap; }
 .header h1 span { color: var(--blue); }
-.header-right { display: flex; gap: 12px; align-items: center; }
-.header-right select { background: var(--bg3); color: var(--text); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; font-size: 13px; }
+.header-right { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.sel { background: var(--bg3); color: var(--text); border: 1px solid var(--border); padding: 6px 10px; border-radius: 6px; font-size: 13px; }
 
 /* Stats */
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; padding: 20px 24px; }
-.stat-card { background: var(--bg2); border-radius: 10px; padding: 16px; border: 1px solid var(--border); }
-.stat-card .value { font-size: 28px; font-weight: 700; }
-.stat-card .label { font-size: 12px; color: var(--text2); margin-top: 4px; }
-.stat-card.green .value { color: var(--green); }
-.stat-card.blue .value { color: var(--blue); }
-.stat-card.yellow .value { color: var(--yellow); }
-.stat-card.purple .value { color: var(--purple); }
-.stat-card.cyan .value { color: var(--cyan); }
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; padding: 16px 24px; }
+.stat-card { background: var(--bg2); border-radius: 10px; padding: 14px; border: 1px solid var(--border); }
+.stat-card .val { font-size: 26px; font-weight: 700; }
+.stat-card .lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.stat-card .sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+.c-blue .val{color:var(--blue)} .c-green .val{color:var(--green)} .c-yellow .val{color:var(--yellow)}
+.c-purple .val{color:var(--purple)} .c-cyan .val{color:var(--cyan)} .c-red .val{color:var(--red)}
 
-/* Tabs */
-.tabs { display: flex; gap: 0; padding: 0 24px; border-bottom: 1px solid var(--border); }
-.tab { padding: 12px 20px; font-size: 14px; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+/* Tabs + toolbar */
+.toolbar { display: flex; align-items: center; padding: 0 24px; border-bottom: 1px solid var(--border); gap: 0; flex-wrap: wrap; }
+.tab { padding: 11px 18px; font-size: 13px; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; white-space: nowrap; }
 .tab:hover { color: var(--text); }
 .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+.toolbar-right { margin-left: auto; display: flex; gap: 8px; padding: 6px 0; }
+
+/* Buttons */
+.btn { padding: 7px 14px; border-radius: 6px; border: none; font-size: 12px; cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; gap: 4px; transition: all .15s; }
+.btn-primary { background: var(--blue); color: white; }
+.btn-primary:hover { background: #2563eb; }
+.btn-green { background: var(--green); color: white; }
+.btn-green:hover { background: #16a34a; }
+.btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+.btn-outline:hover { background: var(--bg3); color: var(--text); }
+.btn-red { background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+.btn-red:hover { background: rgba(239,68,68,0.1); }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
 
 /* Filters */
-.filters { display: flex; gap: 10px; padding: 16px 24px; flex-wrap: wrap; align-items: center; }
-.filters select, .filters input { background: var(--bg2); color: var(--text); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; font-size: 13px; }
-.filters .btn { padding: 8px 16px; border-radius: 6px; border: none; font-size: 13px; cursor: pointer; font-weight: 500; }
-.filters .btn-primary { background: var(--blue); color: white; }
-.filters .btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+.filters { display: flex; gap: 8px; padding: 12px 24px; flex-wrap: wrap; align-items: center; }
+.search-box { background: var(--bg2); color: var(--text); border: 1px solid var(--border); padding: 7px 12px 7px 32px; border-radius: 6px; font-size: 13px; width: 200px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2364748b' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 10-1.397 1.398h-.001l3.85 3.85a1 1 0 001.415-1.414l-3.85-3.85zm-5.242.156a5 5 0 110-10 5 5 0 010 10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 10px center; }
 
 /* Table */
 .table-wrap { padding: 0 24px 24px; overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-thead th { text-align: left; padding: 10px 12px; color: var(--text2); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-tbody td { padding: 10px 12px; border-bottom: 1px solid rgba(71,85,105,0.3); vertical-align: middle; }
-tbody tr:hover { background: rgba(59,130,246,0.05); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { text-align: left; padding: 9px 10px; color: var(--text3); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody td { padding: 9px 10px; border-bottom: 1px solid rgba(71,85,105,.25); vertical-align: middle; }
+tbody tr:hover { background: rgba(59,130,246,.04); }
+tr.overdue { background: rgba(239,68,68,.04); }
+tr.overdue td:first-child { border-left: 3px solid var(--red); }
 
 /* Badges */
-.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-.badge-pending { background: rgba(234,179,8,0.15); color: var(--yellow); }
-.badge-done { background: rgba(34,197,94,0.15); color: var(--green); }
-.badge-urgent { background: rgba(239,68,68,0.15); color: var(--red); }
-.badge-type { background: rgba(59,130,246,0.12); color: var(--blue); }
-.badge-active { background: rgba(34,197,94,0.15); color: var(--green); }
-.badge-inactive { background: rgba(100,116,139,0.2); color: var(--text3); }
+.badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.b-pending { background: rgba(234,179,8,.12); color: var(--yellow); }
+.b-done { background: rgba(34,197,94,.12); color: var(--green); }
+.b-urgent { background: rgba(239,68,68,.12); color: var(--red); margin-left: 4px; }
+.b-overdue { background: rgba(239,68,68,.2); color: var(--red); margin-left: 4px; }
+.b-type { background: rgba(59,130,246,.1); color: var(--blue); }
+.b-active { background: rgba(34,197,94,.12); color: var(--green); }
+.b-inactive { background: rgba(100,116,139,.15); color: var(--text3); }
 
-/* Actions */
-.action-btn { padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-size: 12px; cursor: pointer; margin-right: 4px; transition: all 0.15s; }
-.action-btn:hover { background: var(--border); }
-.action-btn.done-btn:hover { background: rgba(34,197,94,0.2); border-color: var(--green); color: var(--green); }
-.action-btn.del-btn:hover { background: rgba(239,68,68,0.2); border-color: var(--red); color: var(--red); }
+/* Meta chips */
+.meta-chips { display: flex; gap: 6px; margin-top: 3px; flex-wrap: wrap; }
+.chip { font-size: 10px; padding: 1px 6px; border-radius: 3px; background: var(--bg3); color: var(--text2); }
 
-/* Content cell */
-.item-content { max-width: 300px; }
-.item-content .emoji { font-size: 16px; margin-right: 6px; }
-.item-content .text { line-height: 1.4; }
-.item-meta { font-size: 11px; color: var(--text3); margin-top: 3px; }
+/* Content */
+.item-text { line-height: 1.4; max-width: 280px; }
+.time-ago { color: var(--text3); font-size: 11px; }
 
-/* Empty state */
-.empty { text-align: center; padding: 60px 20px; color: var(--text3); }
-.empty .icon { font-size: 48px; opacity: 0.3; margin-bottom: 12px; }
+/* Modal */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100; display: flex; align-items: center; justify-content: center; }
+.modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; width: 420px; max-width: 90vw; max-height: 85vh; overflow-y: auto; }
+.modal h3 { font-size: 16px; margin-bottom: 16px; }
+.modal label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 4px; margin-top: 12px; }
+.modal input, .modal select, .modal textarea { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 8px 10px; border-radius: 6px; font-size: 13px; font-family: inherit; }
+.modal textarea { resize: vertical; min-height: 60px; }
+.modal-actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
-  .filters { flex-direction: column; }
-  .header { flex-direction: column; gap: 10px; }
-}
-
-/* Loading */
-.loading { text-align: center; padding: 40px; color: var(--text3); }
-.spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+/* Empty */
+.empty { text-align: center; padding: 50px 20px; color: var(--text3); }
+.empty .icon { font-size: 40px; opacity: .3; margin-bottom: 8px; }
 
 /* Toast */
-.toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg2); border: 1px solid var(--border); padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
+.toast { position: fixed; bottom: 20px; right: 20px; background: var(--bg2); border: 1px solid var(--border); padding: 10px 18px; border-radius: 8px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity .3s; pointer-events: none; }
 .toast.show { opacity: 1; }
 .toast.success { border-color: var(--green); }
 .toast.error { border-color: var(--red); }
+
+/* Loading */
+.spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 12px 16px; }
+  .filters, .table-wrap { padding-left: 16px; padding-right: 16px; }
+  .header { padding: 12px 16px; }
+  .search-box { width: 100%; }
+  .toolbar-right { width: 100%; justify-content: flex-end; }
+}
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1><span>iFixForU</span> Dashboard Admin</h1>
+  <h1><span>iFixForU</span> Admin</h1>
   <div class="header-right">
-    <select id="daySelect">
-      <option value="1">Today</option>
-      <option value="3">Last 3 Days</option>
-      <option value="7" selected>Last 7 Days</option>
-      <option value="14">Last 14 Days</option>
-      <option value="30">Last 30 Days</option>
+    <select class="sel" id="daySelect">
+      <option value="1">今天</option>
+      <option value="3">近 3 天</option>
+      <option value="7" selected>近 7 天</option>
+      <option value="14">近 14 天</option>
+      <option value="30">近 30 天</option>
     </select>
-    <select id="storeSelect">
+    <select class="sel" id="storeSelect">
       <option value="san_gabriel">San Gabriel</option>
       <option value="monterey_park">Monterey Park</option>
       <option value="arcadia_1">Arcadia 1</option>
@@ -123,49 +138,44 @@ tbody tr:hover { background: rgba(59,130,246,0.05); }
 </div>
 
 <div class="stats-grid" id="statsGrid">
-  <div class="stat-card blue"><div class="value" id="statToday">-</div><div class="label">Today Total</div></div>
-  <div class="stat-card green"><div class="value" id="statDone">-</div><div class="label">Completed</div></div>
-  <div class="stat-card yellow"><div class="value" id="statPending">-</div><div class="label">Pending</div></div>
-  <div class="stat-card purple"><div class="value" id="statWeek">-</div><div class="label">This Week</div></div>
-  <div class="stat-card cyan"><div class="value" id="statNotices">-</div><div class="label">Active Notices</div></div>
+  <div class="stat-card c-blue"><div class="val" id="sTotal">-</div><div class="lbl">今日总数</div><div class="sub" id="sTypeBreak"></div></div>
+  <div class="stat-card c-green"><div class="val" id="sDone">-</div><div class="lbl">已完成</div></div>
+  <div class="stat-card c-yellow"><div class="val" id="sPending">-</div><div class="lbl">待处理</div></div>
+  <div class="stat-card c-red"><div class="val" id="sOverdue">-</div><div class="lbl">已逾期</div></div>
+  <div class="stat-card c-purple"><div class="val" id="sWeek">-</div><div class="lbl">本周累计</div></div>
+  <div class="stat-card c-cyan"><div class="val" id="sNotices">-</div><div class="lbl">活跃公告</div></div>
 </div>
 
-<div class="tabs">
-  <div class="tab active" data-tab="items">Board Items</div>
-  <div class="tab" data-tab="notices">Notices</div>
+<div class="toolbar">
+  <div class="tab active" data-tab="items">看板记录</div>
+  <div class="tab" data-tab="notices">公告管理</div>
+  <div class="toolbar-right">
+    <button class="btn btn-outline" onclick="exportCSV()">导出 CSV</button>
+    <button class="btn btn-green" onclick="showAddModal()">+ 新建</button>
+  </div>
 </div>
 
 <div id="itemsPanel">
   <div class="filters">
-    <select id="filterType">
-      <option value="">All Types</option>
-      <option value="customer_followup">Customer Followup</option>
-      <option value="incoming_inventory">Incoming Inventory</option>
-      <option value="handoff">Handoff</option>
-      <option value="repair_pending">Repair Pending</option>
-      <option value="todo">Todo</option>
+    <input class="search-box" id="searchBox" placeholder="搜索内容、工单号..." oninput="debounceSearch()">
+    <select class="sel" id="filterType">
+      <option value="">全部类型</option>
+      <option value="customer_followup">📞 客户跟进</option>
+      <option value="incoming_inventory">📦 到货提醒</option>
+      <option value="handoff">🔄 交班事项</option>
+      <option value="repair_pending">🔧 维修等待</option>
+      <option value="todo">✏️ 待办</option>
     </select>
-    <select id="filterStatus">
-      <option value="">All Status</option>
-      <option value="pending">Pending</option>
-      <option value="done">Done</option>
+    <select class="sel" id="filterStatus">
+      <option value="">全部状态</option>
+      <option value="pending">待处理</option>
+      <option value="done">已完成</option>
     </select>
-    <button class="btn btn-primary" onclick="loadItems()">Refresh</button>
+    <button class="btn btn-red btn-sm" onclick="clearDone()">清除已完成</button>
   </div>
   <div class="table-wrap">
     <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Type</th>
-          <th>Content</th>
-          <th>Status</th>
-          <th>Creator</th>
-          <th>Created</th>
-          <th>Due</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
+      <thead><tr><th>ID</th><th>分类</th><th>内容</th><th>状态</th><th>创建人</th><th>时间</th><th>截止</th><th>操作</th></tr></thead>
       <tbody id="itemsBody"></tbody>
     </table>
   </div>
@@ -173,217 +183,317 @@ tbody tr:hover { background: rgba(59,130,246,0.05); }
 
 <div id="noticesPanel" style="display:none">
   <div class="filters">
-    <button class="btn btn-primary" onclick="loadNotices()">Refresh</button>
+    <button class="btn btn-green" onclick="showNoticeModal()">+ 新建公告</button>
   </div>
   <div class="table-wrap">
     <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Content</th>
-          <th>Priority</th>
-          <th>Status</th>
-          <th>Creator</th>
-          <th>Created</th>
-          <th>Expires</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
+      <thead><tr><th>ID</th><th>内容</th><th>优先级</th><th>状态</th><th>创建人</th><th>创建时间</th><th>过期时间</th><th>操作</th></tr></thead>
       <tbody id="noticesBody"></tbody>
     </table>
   </div>
 </div>
 
+<div id="modalRoot"></div>
 <div class="toast" id="toast"></div>
 
 <script>
-const API = window.location.origin;
+const API = location.origin;
 const $ = id => document.getElementById(id);
+let allItems = [];
 
-// Tab switching
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    tab.classList.add('active');
-    const name = tab.dataset.tab;
-    $('itemsPanel').style.display = name === 'items' ? '' : 'none';
-    $('noticesPanel').style.display = name === 'notices' ? '' : 'none';
-  });
-});
+// Tabs
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  $('itemsPanel').style.display = t.dataset.tab === 'items' ? '' : 'none';
+  $('noticesPanel').style.display = t.dataset.tab === 'notices' ? '' : 'none';
+}));
 
 function getStore() { return $('storeSelect').value; }
 function getDays() { return $('daySelect').value; }
 
-function toast(msg, type = 'success') {
-  const el = $('toast');
-  el.textContent = msg;
-  el.className = 'toast show ' + type;
+function toast(msg, type='success') {
+  const el = $('toast'); el.textContent = msg; el.className = 'toast show ' + type;
   setTimeout(() => el.className = 'toast', 2500);
 }
 
-function formatDate(str) {
+const TYPE_MAP = {
+  customer_followup: { emoji: '📞', label: '客户跟进', color: '#3b82f6' },
+  incoming_inventory: { emoji: '📦', label: '到货提醒', color: '#f97316' },
+  handoff: { emoji: '🔄', label: '交班事项', color: '#a855f7' },
+  repair_pending: { emoji: '🔧', label: '维修等待', color: '#eab308' },
+  todo: { emoji: '✏️', label: '待办', color: '#06b6d4' },
+};
+
+function timeAgo(str) {
   if (!str) return '-';
   const d = new Date(str.replace(' ', 'T'));
   if (isNaN(d)) return str;
-  const m = (d.getMonth() + 1).toString().padStart(2, '0');
-  const day = d.getDate().toString().padStart(2, '0');
-  const h = d.getHours().toString().padStart(2, '0');
-  const min = d.getMinutes().toString().padStart(2, '0');
-  return `${m}-${day} ${h}:${min}`;
+  const now = new Date();
+  const diff = (now - d) / 1000;
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
+  if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
+  if (diff < 172800) return '昨天 ' + d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  return (d.getMonth()+1) + '/' + d.getDate() + ' ' + d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
 }
 
-const TYPE_EMOJI = {
-  customer_followup: '📞', incoming_inventory: '📦', handoff: '🔄',
-  repair_pending: '🔧', todo: '✏️'
-};
-const TYPE_LABEL = {
-  customer_followup: 'Customer', incoming_inventory: 'Inventory', handoff: 'Handoff',
-  repair_pending: 'Repair', todo: 'Todo'
-};
+function isOverdue(item) {
+  if (item.status === 'done' || !item.due_date) return false;
+  const now = new Date();
+  const pst = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  const today = pst.getFullYear() + '-' + String(pst.getMonth()+1).padStart(2,'0') + '-' + String(pst.getDate()).padStart(2,'0');
+  if (item.due_date < today) return true;
+  if (item.due_date === today && item.due_time) {
+    const nowTime = pst.getHours().toString().padStart(2,'0') + ':' + pst.getMinutes().toString().padStart(2,'0');
+    return item.due_time < nowTime;
+  }
+  return false;
+}
 
+// Stats
 async function loadStats() {
   try {
-    const resp = await fetch(`${API}/api/admin/stats?store=${getStore()}`);
-    const d = await resp.json();
-    $('statToday').textContent = d.today_total;
-    $('statDone').textContent = d.today_done;
-    $('statPending').textContent = d.today_pending;
-    $('statWeek').textContent = d.week_total;
-    $('statNotices').textContent = d.active_notices;
-  } catch (e) {
-    console.error('Stats error:', e);
-  }
+    const d = await (await fetch(`${API}/api/admin/stats?store=${getStore()}`)).json();
+    $('sTotal').textContent = d.today_total;
+    $('sDone').textContent = d.today_done;
+    $('sPending').textContent = d.today_pending;
+    $('sWeek').textContent = d.week_total;
+    $('sNotices').textContent = d.active_notices;
+    // Type breakdown
+    const parts = [];
+    for (const [k, v] of Object.entries(d.by_type || {})) {
+      const t = TYPE_MAP[k]; if (t) parts.push(t.emoji + ' ' + v);
+    }
+    $('sTypeBreak').textContent = parts.join('  ') || '-';
+    // Overdue count
+    const overdueCount = allItems.filter(i => isOverdue(i)).length;
+    $('sOverdue').textContent = overdueCount;
+  } catch (e) { console.error(e); }
 }
 
+// Items
 async function loadItems() {
   const body = $('itemsBody');
-  body.innerHTML = '<tr><td colspan="8"><div class="loading"><div class="spinner"></div></div></td></tr>';
-
+  body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>';
   try {
     const type = $('filterType').value;
     const status = $('filterStatus').value;
     let url = `${API}/api/admin/items?store=${getStore()}&days=${getDays()}`;
     if (type) url += `&type=${type}`;
     if (status) url += `&status=${status}`;
-
-    const resp = await fetch(url);
-    const items = await resp.json();
-
-    if (!items.length) {
-      body.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="icon">📋</div>No items found</div></td></tr>';
-      return;
-    }
-
-    body.innerHTML = items.map(item => {
-      const typeEmoji = TYPE_EMOJI[item.type] || '📌';
-      const typeLabel = TYPE_LABEL[item.type] || item.type;
-      const statusBadge = item.status === 'done'
-        ? '<span class="badge badge-done">Done</span>'
-        : '<span class="badge badge-pending">Pending</span>';
-      const urgentBadge = item.urgent ? ' <span class="badge badge-urgent">Urgent</span>' : '';
-      const meta = item.meta || {};
-      const metaParts = [];
-      if (meta.ticket) metaParts.push('🎫 ' + meta.ticket);
-      if (meta.phone) metaParts.push('📱 ' + meta.phone);
-      if (meta.amount) metaParts.push('💰 $' + meta.amount);
-      if (meta.source) metaParts.push('📦 ' + meta.source);
-      const metaHtml = metaParts.length ? '<div class="item-meta">' + metaParts.join(' &middot; ') + '</div>' : '';
-      const due = item.due_date ? (item.due_time ? item.due_date + ' ' + item.due_time : item.due_date) : '-';
-      const actions = item.status === 'pending'
-        ? `<button class="action-btn done-btn" onclick="markDone(${item.id})">✓ Done</button><button class="action-btn del-btn" onclick="deleteItem(${item.id})">✕ Delete</button>`
-        : `<span style="font-size:12px;color:var(--text3)">${item.done_by ? 'by ' + item.done_by : ''}</span>`;
-
-      return `<tr>
-        <td style="color:var(--text3)">#${item.id}</td>
-        <td><span class="badge badge-type">${typeEmoji} ${typeLabel}</span></td>
-        <td><div class="item-content"><span class="text">${item.content}</span>${metaHtml}</div></td>
-        <td>${statusBadge}${urgentBadge}</td>
-        <td style="color:var(--text2)">${item.creator_name || '-'}</td>
-        <td style="color:var(--text2);white-space:nowrap">${formatDate(item.created_at)}</td>
-        <td style="color:var(--text2);white-space:nowrap">${due}</td>
-        <td style="white-space:nowrap">${actions}</td>
-      </tr>`;
-    }).join('');
+    allItems = await (await fetch(url)).json();
+    renderItems();
+    loadStats();
   } catch (e) {
-    body.innerHTML = `<tr><td colspan="8"><div class="empty">Error: ${e.message}</div></td></tr>`;
+    body.innerHTML = '<tr><td colspan="8"><div class="empty">加载失败: ' + e.message + '</div></td></tr>';
   }
 }
 
+function renderItems() {
+  const body = $('itemsBody');
+  const q = ($('searchBox').value || '').toLowerCase();
+  let items = allItems;
+  if (q) items = items.filter(i =>
+    i.content.toLowerCase().includes(q) ||
+    (i.meta?.ticket || '').toLowerCase().includes(q) ||
+    (i.meta?.phone || '').toLowerCase().includes(q) ||
+    (i.creator_name || '').toLowerCase().includes(q)
+  );
+
+  if (!items.length) {
+    body.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="icon">📋</div>' + (q ? '没有搜索结果' : '暂无记录') + '</div></td></tr>';
+    return;
+  }
+
+  body.innerHTML = items.map(item => {
+    const t = TYPE_MAP[item.type] || { emoji: '📌', label: item.type, color: '#64748b' };
+    const overdue = isOverdue(item);
+    const statusHtml = item.status === 'done'
+      ? '<span class="badge b-done">已完成</span>'
+      : '<span class="badge b-pending">待处理</span>';
+    const urgentHtml = item.urgent ? '<span class="badge b-urgent">紧急</span>' : '';
+    const overdueHtml = overdue ? '<span class="badge b-overdue">逾期</span>' : '';
+    const meta = item.meta || {};
+    const chips = [];
+    if (meta.ticket) chips.push('🎫 ' + meta.ticket);
+    if (meta.phone) chips.push('📱 ' + meta.phone);
+    if (meta.amount) chips.push('💰 $' + meta.amount + (meta.paid ? ' ✓' : ''));
+    if (meta.source) chips.push('📦 ' + meta.source);
+    const chipsHtml = chips.length ? '<div class="meta-chips">' + chips.map(c => '<span class="chip">' + c + '</span>').join('') + '</div>' : '';
+    const due = item.due_date ? (item.due_time ? item.due_date + ' ' + item.due_time : item.due_date) : '-';
+    const actions = item.status === 'pending'
+      ? `<button class="btn btn-sm btn-outline" onclick="markDone(${item.id})" style="color:var(--green);border-color:rgba(34,197,94,.3)">完成</button> <button class="btn btn-sm btn-outline" onclick="deleteItem(${item.id})" style="color:var(--red);border-color:rgba(239,68,68,.3)">删除</button>`
+      : '<span class="time-ago">' + (item.done_by || '') + '</span>';
+
+    return '<tr class="' + (overdue ? 'overdue' : '') + '">' +
+      '<td style="color:var(--text3)">#' + item.id + '</td>' +
+      '<td><span class="badge b-type" style="background:' + t.color + '20;color:' + t.color + '">' + t.emoji + ' ' + t.label + '</span></td>' +
+      '<td><div class="item-text">' + item.content + '</div>' + chipsHtml + '</td>' +
+      '<td>' + statusHtml + urgentHtml + overdueHtml + '</td>' +
+      '<td style="color:var(--text2)">' + (item.creator_name || '-') + '</td>' +
+      '<td><span class="time-ago">' + timeAgo(item.created_at) + '</span></td>' +
+      '<td style="white-space:nowrap;color:' + (overdue ? 'var(--red)' : 'var(--text2)') + '">' + due + '</td>' +
+      '<td style="white-space:nowrap">' + actions + '</td></tr>';
+  }).join('');
+}
+
+let searchTimer;
+function debounceSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(renderItems, 200); }
+
+// Notices
 async function loadNotices() {
   const body = $('noticesBody');
-  body.innerHTML = '<tr><td colspan="8"><div class="loading"><div class="spinner"></div></div></td></tr>';
-
+  body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px"><div class="spinner"></div></td></tr>';
   try {
-    const resp = await fetch(`${API}/api/admin/notices?store=${getStore()}`);
-    const notices = await resp.json();
-
-    if (!notices.length) {
-      body.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="icon">📢</div>No notices</div></td></tr>';
-      return;
-    }
-
+    const notices = await (await fetch(`${API}/api/admin/notices?store=${getStore()}`)).json();
+    if (!notices.length) { body.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="icon">📢</div>暂无公告</div></td></tr>'; return; }
     body.innerHTML = notices.map(n => {
-      const statusBadge = n.active
-        ? '<span class="badge badge-active">Active</span>'
-        : '<span class="badge badge-inactive">Inactive</span>';
-      const actions = n.active
-        ? `<button class="action-btn del-btn" onclick="deactivateNotice(${n.id})">Deactivate</button>`
-        : '';
-      return `<tr>
-        <td style="color:var(--text3)">#${n.id}</td>
-        <td><span style="margin-right:6px">${n.display_emoji}</span>${n.content}</td>
-        <td>${n.priority}</td>
-        <td>${statusBadge}</td>
-        <td style="color:var(--text2)">${n.creator_name || '-'}</td>
-        <td style="color:var(--text2);white-space:nowrap">${formatDate(n.created_at)}</td>
-        <td style="color:var(--text2)">${n.expires_at || 'Never'}</td>
-        <td>${actions}</td>
-      </tr>`;
+      const st = n.active ? '<span class="badge b-active">生效中</span>' : '<span class="badge b-inactive">已停用</span>';
+      const act = n.active ? `<button class="btn btn-sm btn-outline" onclick="deactivateNotice(${n.id})" style="color:var(--red);border-color:rgba(239,68,68,.3)">停用</button>` : '';
+      return '<tr><td style="color:var(--text3)">#' + n.id + '</td>' +
+        '<td>' + n.display_emoji + ' ' + n.content + '</td>' +
+        '<td>' + ['', '普通', '重要', '紧急'][n.priority] + '</td>' +
+        '<td>' + st + '</td>' +
+        '<td style="color:var(--text2)">' + (n.creator_name || '-') + '</td>' +
+        '<td><span class="time-ago">' + timeAgo(n.created_at) + '</span></td>' +
+        '<td style="color:var(--text2)">' + (n.expires_at || '永久') + '</td>' +
+        '<td>' + act + '</td></tr>';
     }).join('');
-  } catch (e) {
-    body.innerHTML = `<tr><td colspan="8"><div class="empty">Error: ${e.message}</div></td></tr>`;
-  }
+  } catch (e) { body.innerHTML = '<tr><td colspan="8"><div class="empty">加载失败</div></td></tr>'; }
 }
 
+// Actions
 async function markDone(id) {
-  if (!confirm('Mark #' + id + ' as done?')) return;
-  try {
-    await fetch(`${API}/api/admin/items/${id}/done`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ done_by: 'Admin' }) });
-    toast('✅ #' + id + ' marked as done');
-    loadItems(); loadStats();
-  } catch (e) { toast('Error: ' + e.message, 'error'); }
+  if (!confirm('确认完成 #' + id + '？')) return;
+  await fetch(`${API}/api/admin/items/${id}/done`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: '{"done_by":"Admin"}' });
+  toast('已完成 #' + id); loadItems();
 }
-
 async function deleteItem(id) {
-  if (!confirm('Delete #' + id + '? This cannot be undone.')) return;
-  try {
-    await fetch(`${API}/api/admin/items/${id}/delete`, { method: 'POST' });
-    toast('🗑 #' + id + ' deleted');
-    loadItems(); loadStats();
-  } catch (e) { toast('Error: ' + e.message, 'error'); }
+  if (!confirm('确认删除 #' + id + '？此操作不可撤销。')) return;
+  await fetch(`${API}/api/admin/items/${id}/delete`, { method: 'POST' });
+  toast('已删除 #' + id); loadItems();
 }
-
 async function deactivateNotice(id) {
-  if (!confirm('Deactivate notice #' + id + '?')) return;
-  try {
-    await fetch(`${API}/api/admin/notices/${id}/deactivate`, { method: 'POST' });
-    toast('📢 Notice #' + id + ' deactivated');
-    loadNotices(); loadStats();
-  } catch (e) { toast('Error: ' + e.message, 'error'); }
+  if (!confirm('确认停用公告 #' + id + '？')) return;
+  await fetch(`${API}/api/admin/notices/${id}/deactivate`, { method: 'POST' });
+  toast('公告已停用'); loadNotices(); loadStats();
+}
+async function clearDone() {
+  const doneItems = allItems.filter(i => i.status === 'done');
+  if (!doneItems.length) { toast('没有已完成的记录', 'error'); return; }
+  if (!confirm('确认删除 ' + doneItems.length + ' 条已完成记录？')) return;
+  for (const i of doneItems) await fetch(`${API}/api/admin/items/${i.id}/delete`, { method: 'POST' });
+  toast('已清除 ' + doneItems.length + ' 条'); loadItems();
 }
 
-// Auto-refresh on filter change
-$('daySelect').addEventListener('change', () => { loadItems(); loadStats(); });
-$('storeSelect').addEventListener('change', () => { loadItems(); loadNotices(); loadStats(); });
+// Add Item Modal
+function showAddModal() {
+  $('modalRoot').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <h3>新建看板项</h3>
+    <label>分类</label>
+    <select id="addType">
+      <option value="todo">✏️ 待办</option>
+      <option value="customer_followup">📞 客户跟进</option>
+      <option value="incoming_inventory">📦 到货提醒</option>
+      <option value="handoff">🔄 交班事项</option>
+      <option value="repair_pending">🔧 维修等待</option>
+    </select>
+    <label>内容</label>
+    <textarea id="addContent" placeholder="输入看板内容..."></textarea>
+    <label>截止日期（可选）</label>
+    <input type="date" id="addDue">
+    <label>截止时间（可选）</label>
+    <input type="time" id="addTime">
+    <label style="display:flex;align-items:center;gap:6px;margin-top:12px;cursor:pointer">
+      <input type="checkbox" id="addUrgent"> 标记为紧急
+    </label>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="submitAdd()">创建</button>
+    </div>
+  </div></div>`;
+  $('addContent').focus();
+}
+
+function showNoticeModal() {
+  $('modalRoot').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">
+    <h3>新建公告</h3>
+    <label>内容</label>
+    <textarea id="noticeContent" placeholder="输入公告内容..."></textarea>
+    <label>优先级</label>
+    <select id="noticePriority">
+      <option value="1">普通</option>
+      <option value="2">重要</option>
+      <option value="3">紧急</option>
+    </select>
+    <label>过期时间（可选）</label>
+    <input type="datetime-local" id="noticeExpiry">
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">取消</button>
+      <button class="btn btn-primary" onclick="submitNotice()">发布</button>
+    </div>
+  </div></div>`;
+  $('noticeContent').focus();
+}
+
+function closeModal() { $('modalRoot').innerHTML = ''; }
+
+async function submitAdd() {
+  const content = $('addContent').value.trim();
+  if (!content) { toast('请输入内容', 'error'); return; }
+  const body = {
+    store: getStore(),
+    type: $('addType').value, content,
+    due_date: $('addDue').value || null,
+    due_time: $('addTime').value || null,
+    urgent: $('addUrgent').checked,
+    creator_name: 'Admin',
+  };
+  await fetch(`${API}/api/admin/items/create`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  closeModal(); toast('已创建'); loadItems();
+}
+
+async function submitNotice() {
+  const content = $('noticeContent').value.trim();
+  if (!content) { toast('请输入内容', 'error'); return; }
+  const body = {
+    store: getStore(),
+    content,
+    priority: parseInt($('noticePriority').value),
+    expires_at: $('noticeExpiry').value || null,
+    creator_name: 'Admin',
+  };
+  await fetch(`${API}/api/admin/notices/create`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  closeModal(); toast('公告已发布'); loadNotices(); loadStats();
+}
+
+// Export CSV
+function exportCSV() {
+  if (!allItems.length) { toast('没有数据可导出', 'error'); return; }
+  const header = 'ID,类型,内容,状态,紧急,创建人,创建时间,截止日期,截止时间,工单号,手机型号,金额,来源\n';
+  const rows = allItems.map(i => {
+    const m = i.meta || {};
+    return [i.id, (TYPE_MAP[i.type]||{}).label||i.type, '"'+i.content.replace(/"/g,'""')+'"', i.status==='done'?'已完成':'待处理',
+      i.urgent?'是':'否', i.creator_name||'', i.created_at||'', i.due_date||'', i.due_time||'',
+      m.ticket||'', m.phone||'', m.amount||'', m.source||''].join(',');
+  }).join('\n');
+  const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'dashboard_items_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  toast('已导出 ' + allItems.length + ' 条');
+}
+
+// Events
+$('daySelect').addEventListener('change', loadItems);
+$('storeSelect').addEventListener('change', () => { loadItems(); loadNotices(); });
 $('filterType').addEventListener('change', loadItems);
 $('filterStatus').addEventListener('change', loadItems);
 
-// Initial load
-loadStats();
-loadItems();
-loadNotices();
-
-// Auto-refresh every 30s
+// Init
+loadStats(); loadItems(); loadNotices();
 setInterval(() => { loadStats(); loadItems(); }, 30000);
 </script>
 </body>

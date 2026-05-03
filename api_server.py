@@ -18,7 +18,8 @@ from threading import Thread, Lock
 
 from db import (get_today_items, get_active_notices, init_db,
                 get_items_history, get_all_notices_admin, get_admin_stats,
-                mark_done, delete_item, deactivate_notice)
+                mark_done, delete_item, deactivate_notice,
+                add_item, add_notice)
 
 # 添加 CloverWatch 项目到路径
 sys.path.insert(0, "/Users/Apple/PhpstormProjects/CloverWatch")
@@ -346,7 +347,17 @@ class DashboardHandler(BaseHTTPRequestHandler):
         content_len = int(self.headers.get("Content-Length", 0))
         body = json.loads(self.rfile.read(content_len)) if content_len > 0 else {}
 
-        if path.startswith("/api/admin/items/") and path.endswith("/done"):
+        if path == "/api/admin/items/create":
+            store = body.get("store", "san_gabriel")
+            item_id = add_item(store, body)
+            self._json_response({"ok": True, "id": item_id})
+
+        elif path == "/api/admin/notices/create":
+            store = body.get("store", "san_gabriel")
+            notice_id = add_notice(store, body)
+            self._json_response({"ok": True, "id": notice_id})
+
+        elif path.startswith("/api/admin/items/") and path.endswith("/done"):
             item_id = int(path.split("/")[4])
             ok = mark_done(item_id, body.get("done_by", "Admin"))
             self._json_response({"ok": ok})
