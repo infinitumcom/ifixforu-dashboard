@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=960, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>iFixForU Operations Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1403,141 +1403,167 @@
     animation: pixel-shift 120s ease-in-out infinite;
   }
 
+
   /* ============================================================
-     PORTRAIT MODE (540dp CSS × 960dp) — Fire TV 竖屏看板布局
-     Fire TV 4K Max: 1080×1920 physical px, 320dpi, 2x ratio
-     CSS viewport: 540×960 dp
+     PORTRAIT MODE — 完全自适应,任何屏幕都能填满
+     
+     策略:
+     - #app 按 1080×1920 设计基准设计 (大屏直观尺寸)
+     - JS 启动时计算缩放比 + 旋转角度
+     - 任何 WebView 画布大小都能完美填充
      ============================================================ */
 
-  /* App container: tighter padding for narrow screen */
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    background: #0a1628;
+  }
+
+  /* #app 是设计稿,固定 1080×1920,JS 会缩放它 */
   #app {
-    padding: 6px 8px;
-    gap: 4px;
+    width: 1080px;
+    height: 1920px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: top left;
+    /* JS 会动态注入 transform: matrix() 实现旋转+缩放+定位 */
+    
+    padding: 16px 20px;
+    gap: 10px;
+    display: grid;
+    grid-template-rows:
+      120px      /* 1. Header */
+      72px       /* 2. Shift bar */
+      56px       /* 3. Notice */
+      280px      /* 4. Revenue */
+      180px      /* 5. Pipeline */
+      1fr        /* 6. Board */
+      130px      /* 7. Recommend */
+      120px      /* 8. Reviews */
+      280px      /* 9. Rankings */
+      32px       /* 10. Status */;
+    grid-template-columns: 1fr;
   }
 
-  /* Header: 2-column layout (brand left, clock right) */
+  /* 隐藏鼠标 */
+  *, *::before, *::after { cursor: none !important; }
+
+  /* ===== 1. HEADER ===== */
   .header {
-    grid-template-columns: 1fr auto;
-    padding: 6px 10px;
-    gap: 6px;
+    grid-template-columns: auto 1fr auto;
+    padding: 14px 22px;
+    gap: 16px;
+    border-radius: 12px;
   }
-  .header-center { display: none; } /* Hide mode label & voice on portrait */
-  .brand-logo { width: 32px; height: 32px; }
-  .brand-name { font-size: 22px; letter-spacing: 1.5px; }
-  .brand-store { font-size: 11px; margin-top: 1px; }
-  .meta-clock { font-size: 20px; }
-  .meta-date { font-size: 9px; letter-spacing: 1px; }
+  .header-center { display: flex; }
+  .brand-logo { width: 60px; height: 60px; }
+  .brand-name { font-size: 44px; letter-spacing: 3px; }
+  .brand-store { font-size: 18px; margin-top: 2px; }
+  .header-mode { font-size: 16px; }
+  .meta-clock { font-size: 38px; }
+  .meta-date { font-size: 14px; letter-spacing: 1.5px; }
+  .voice-toggle { display: none; }
 
-  /* Shift bar: compact */
-  .shift-bar {
-    padding: 4px 8px;
-    gap: 6px;
-  }
-  .shift-label { font-size: 10px; padding: 3px 8px; gap: 4px; }
-  .shift-label-icon { font-size: 12px; }
-  .shift-emp { padding: 3px 6px; gap: 4px; }
-  .shift-emp-avatar { width: 20px; height: 20px; font-size: 10px; }
-  .shift-emp-name { font-size: 12px; }
-  .shift-emp-role { font-size: 9px; }
-  .shift-time-info { display: none; } /* Hide shift time on narrow */
+  /* ===== 2. SHIFT BAR ===== */
+  .shift-bar { padding: 10px 20px; gap: 14px; border-radius: 12px; }
+  .shift-label { font-size: 16px; padding: 6px 14px; gap: 8px; }
+  .shift-label-icon { font-size: 18px; }
+  .shift-emp { padding: 6px 12px; gap: 8px; }
+  .shift-emp-avatar { width: 32px; height: 32px; font-size: 14px; }
+  .shift-emp-name { font-size: 18px; }
+  .shift-emp-role { font-size: 12px; }
+  .shift-time-info { display: flex; font-size: 14px; }
 
-  /* Notice strip: compact */
-  .notice-strip { padding: 3px 8px; gap: 6px; }
-  .notice-strip-label { font-size: 10px; padding: 3px 8px; gap: 4px; }
-  .notice-strip-icon { font-size: 11px; }
-  .notice-strip-track { font-size: 12px; }
+  /* ===== 3. NOTICE STRIP ===== */
+  .notice-strip { padding: 8px 18px; gap: 12px; border-radius: 10px; }
+  .notice-strip-label { font-size: 15px; padding: 5px 12px; gap: 6px; }
+  .notice-strip-icon { font-size: 16px; }
+  .notice-strip-track { font-size: 18px; }
 
-  /* Revenue + Pipeline: STACK VERTICALLY */
-  .stats-row {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
+  /* ===== 4. REVENUE ===== */
+  .revenue-compact { padding: 18px 24px; gap: 12px; border-radius: 12px; }
+  .revenue-eyebrow { font-size: 18px; }
+  .revenue-day-badge { font-size: 16px; padding: 6px 14px; }
+  .revenue-amount { font-size: 130px; line-height: 1; letter-spacing: -2px; }
+  .revenue-dollar { font-size: 70px; }
+  .revenue-bar { height: 12px; }
+  .revenue-cats { grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .revenue-cat { padding: 8px 10px; gap: 4px; }
+  .revenue-cat-icon { font-size: 18px; }
+  .revenue-cat-amount { font-size: 22px; }
+  .revenue-cat-label { font-size: 11px; }
 
-  .revenue-compact { padding: 8px 10px; }
-  .revenue-top { margin-bottom: 4px; }
-  .revenue-eyebrow { font-size: 10px; letter-spacing: 1.5px; }
-  .revenue-day-badge { font-size: 10px; padding: 2px 8px; }
-  .daily-hero { margin-bottom: 4px; }
-  .daily-hero-amount { font-size: 42px; }
-  .revenue-dollar { font-size: 22px; }
-  .daily-hero-orders { font-size: 13px; }
-  .daily-hero-orders-num { font-size: 18px; }
-  .daily-hero-avg { font-size: 11px; }
-  .monthly-progress { margin-bottom: 4px; }
-  .monthly-label-text { font-size: 9px; }
-  .monthly-label-amount { font-size: 13px; }
-  .monthly-label-target { font-size: 11px; }
-  .monthly-label-pct { font-size: 12px; }
-  .revenue-bar { height: 8px; }
-  .revenue-cats { grid-template-columns: repeat(4, 1fr); gap: 3px; margin-top: 4px; }
-  .rev-cat { padding: 2px 4px; gap: 3px; }
-  .rev-cat-icon { font-size: 11px; }
-  .rev-cat-amount { font-size: 12px; }
-  .rev-cat-pct { font-size: 9px; }
+  /* ===== 5. PIPELINE ===== */
+  .pipeline-card { padding: 14px 22px; min-width: 0; border-radius: 12px; }
+  .pipeline-title { font-size: 18px; }
+  .pipeline-stages { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .pipeline-stage { padding: 10px 8px; flex-direction: column; gap: 4px; align-items: center; }
+  .pipeline-stage-icon { font-size: 22px; }
+  .pipeline-stage-label { font-size: 14px; }
+  .pipeline-stage-count { font-size: 36px; }
+  .pipeline-total { font-size: 14px; }
+  .pipeline-total-num { font-size: 28px; }
 
-  /* Pipeline: horizontal row, compact */
-  .pipeline-card { min-width: 0; padding: 6px 10px; }
-  .pipeline-title { font-size: 9px; margin-bottom: 4px; letter-spacing: 1.5px; }
-  .pipeline-stages { flex-direction: row; gap: 4px; }
-  .pipeline-stage { flex: 1; justify-content: center; gap: 4px; padding: 4px 6px; }
-  .pipeline-stage-icon { font-size: 12px; }
-  .pipeline-stage-count { font-size: 16px; }
-  .pipeline-stage-label { font-size: 8px; }
-  .pipeline-total { margin-top: 4px; padding-top: 4px; font-size: 11px; }
-  .pipeline-total-num { font-size: 18px; }
+  /* ===== 6. BOARD ===== */
+  .board-section { overflow: hidden; padding: 14px 18px; border-radius: 12px; }
+  .board-title-row { font-size: 20px; margin-bottom: 10px; }
+  .board-count-badge { font-size: 14px; padding: 4px 10px; }
+  .board-group-icon { font-size: 18px; }
+  .board-group-label { font-size: 16px; }
+  .board-group-count { font-size: 14px; }
+  .board-group { margin-bottom: 8px; }
+  .board-items { gap: 6px; margin-bottom: 8px; }
+  .board-item { padding: 12px 14px; gap: 12px; grid-template-columns: auto 1fr auto; border-radius: 10px; }
+  .item-emoji { font-size: 24px; width: 32px; }
+  .item-content { gap: 4px; }
+  .item-text { font-size: 17px; line-height: 1.35; }
+  .item-meta { font-size: 13px; gap: 8px; }
+  .item-id { font-size: 13px; }
+  .item-structured-meta { gap: 6px; margin-top: 4px; }
+  .meta-chip { font-size: 12px; padding: 2px 8px; }
+  .item-time-remaining { font-size: 13px; padding: 4px 10px; }
+  .item-right-info { gap: 4px; }
 
-  /* Board section: MAIN FOCUS — gets maximum space */
-  .board-section {
-    flex: 1;
-    min-height: 100px;
-    padding: 6px 8px;
-  }
-  .board-header { margin-bottom: 4px; padding-bottom: 4px; }
-  .board-title { font-size: 18px; letter-spacing: 1.5px; }
-  .board-badge { font-size: 11px; padding: 2px 6px; }
-  .board-group-header { padding: 3px 6px; margin-bottom: 3px; }
-  .board-group-icon { font-size: 14px; }
-  .board-group-label { font-size: 12px; }
-  .board-group-count { font-size: 11px; }
-  .board-group { margin-bottom: 4px; }
-  .board-items { gap: 3px; margin-bottom: 3px; }
-  .board-item { padding: 6px 8px; gap: 6px; grid-template-columns: auto 1fr auto; }
-  .item-emoji { font-size: 18px; width: 24px; }
-  .item-content { gap: 2px; }
-  .item-text { font-size: 13px; line-height: 1.3; }
-  .item-meta { font-size: 10px; gap: 4px; }
-  .item-id { font-size: 10px; }
-  .item-structured-meta { gap: 3px; margin-top: 2px; }
-  .meta-chip { font-size: 9px; padding: 1px 5px; }
-  .item-time-remaining { font-size: 10px; padding: 2px 6px; }
-  .item-right-info { gap: 2px; }
+  /* ===== 7. RECOMMENDATIONS ===== */
+  .recommend-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .recommend-card { padding: 12px 14px; border-radius: 10px; }
+  .recommend-card-title { font-size: 15px; }
+  .recommend-item { padding: 6px 8px; gap: 8px; }
+  .recommend-item-icon { font-size: 18px; }
+  .recommend-item-name { font-size: 13px; }
+  .recommend-item-desc { font-size: 11px; }
+  .recommend-item-price { font-size: 14px; }
+  .recommend-item-unit { font-size: 11px; }
 
-  /* Recommendations: HIDE in portrait (save space for tasks) */
-  .recommend-row { display: none; }
+  /* ===== 8. REVIEWS ===== */
+  .reviews-fixed { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .review-card { padding: 12px 14px; gap: 10px; border-radius: 10px; }
+  .review-card::before { height: 3px; }
+  .review-logo img { height: 28px; }
+  .review-platform { font-size: 11px; letter-spacing: 1.5px; }
+  .review-count { font-size: 32px; }
+  .review-count-row { gap: 8px; }
+  .review-growth { font-size: 14px; }
+  .review-growth .growth-arrow { font-size: 12px; }
+  .review-growth.no-new { font-size: 13px; }
+  .rv-baseline { font-size: 11px; }
 
-  /* Reviews: 3 columns, very compact */
-  .reviews-fixed { grid-template-columns: repeat(3, 1fr); gap: 4px; }
-  .review-card { padding: 6px 6px; gap: 6px; }
-  .review-card::before { height: 2px; }
-  .review-logo img { height: 20px; }
-  .review-platform { font-size: 7px; letter-spacing: 1px; }
-  .review-count { font-size: 20px; }
-  .review-count-row { gap: 4px; }
-  .review-growth { font-size: 10px; }
-  .review-growth .growth-arrow { font-size: 8px; }
-  .review-growth.no-new { font-size: 9px; }
-  .rv-baseline { font-size: 7px; }
+  /* ===== 9. RANKINGS ===== */
+  .rankings-fixed.bar-mode { padding: 14px 22px; gap: 6px; overflow: hidden; border-radius: 12px; }
+  .rank-bar-item { grid-template-columns: 110px 1fr 90px; gap: 12px; padding: 4px 0; }
+  .rank-bar-name { font-size: 15px; }
+  .rank-bar-track { height: 14px; }
+  .rank-bar-amount { font-size: 16px; }
+  .rank-fixed-pos { font-size: 22px; min-width: 24px; }
 
-  /* Rankings: bar chart, compact */
-  .rankings-fixed.bar-mode { padding: 4px 8px; gap: 1px; }
-  .rank-bar-item { grid-template-columns: 60px 1fr 50px; gap: 4px; }
-  .rank-bar-name { font-size: 9px; }
-  .rank-bar-track { height: 8px; }
-  .rank-bar-amount { font-size: 9px; }
+  /* ===== 10. STATUS BAR ===== */
+  .status-bar { padding: 6px 16px; font-size: 12px; gap: 10px; }
+  .footer-stat-dot { width: 10px; height: 10px; }
 
-  /* Status bar */
-  .status-bar { padding: 2px 8px; font-size: 8px; gap: 4px; }
 </style>
 </head>
 
@@ -1706,9 +1732,9 @@
 // CONFIG
 // ============================================================
 const CONFIG = {
-  API_BASE: 'http://localhost:8889',
+  API_BASE: '',
   STORE_CODE: 'san_gabriel',
-  REFRESH_INTERVAL: 60000,
+  REFRESH_INTERVAL: 15000,
   BOTTOM_ROTATE_INTERVAL: 10000,
   QUOTA_SPLIT: { repair: 0.35, activation: 0.35, accessory: 0.20, sales: 0.10 }
 };
@@ -2002,6 +2028,9 @@ async function loadData() {
     merged.rankings = live.rankings;
     merged.month_champion = live.month_champion;
     if (live.employee_rankings) merged.employee_rankings = live.employee_rankings;
+    if (live.items && live.items.length > 0) merged.items = live.items;
+    if (live.notices && live.notices.length > 0) merged.notices = live.notices;
+    if (live.reviews) merged.reviews = Object.assign({}, merged.reviews || {}, live.reviews);
 
     // Inject today's schedule into shift data
     const todayStaff = getTodaySchedule(CONFIG.STORE_CODE);
@@ -2431,6 +2460,8 @@ function renderReviewsFixed(reviews) {
   var gT = ReviewTracker.track('google', g.total);
   var yT = ReviewTracker.track('yelp', y.total);
   var wT = ReviewTracker.track('wechat', w.total);
+  // 微信好友使用 API 返回的 today_added（比 localStorage 更准确）
+  if (w.today_added !== undefined) { wT.todayDelta = w.today_added; }
 
   function cardHtml(platform, logo, count, tracker, subtitle) {
     return '<div class="review-card ' + platform + '">' +
@@ -2924,18 +2955,89 @@ VoiceEngine.init();
 
 // Prevent context menu on TV
 document.addEventListener('contextmenu', e => e.preventDefault());
+</script>
 
-// DEBUG: Show viewport info
-(function(){
-  const d = document.createElement('div');
-  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:8px;z-index:999999;font-size:18px;font-family:monospace;text-align:center;';
-  function update() {
-    d.textContent = 'VW:'+window.innerWidth+' VH:'+window.innerHeight+' DPR:'+window.devicePixelRatio+' SCR:'+screen.width+'x'+screen.height+' OUT:'+window.outerWidth+'x'+window.outerHeight;
+<script>
+/* ============================================================
+   PORTRAIT MODE — 自适应缩放与旋转 (V2 干净算法)
+   
+   设计基准: 1080×1920 竖屏
+   - 任何画布大小都能等比缩放填满
+   - 自动判断需不需要旋转 90°
+   ============================================================ */
+(function() {
+  const DESIGN_W = 1080;
+  const DESIGN_H = 1920;
+  
+  function applyTransform() {
+    const app = document.getElementById('app');
+    if (!app) { setTimeout(applyTransform, 100); return; }
+    
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const isLandscape = vw > vh;
+    
+    let scale, transform;
+    
+    if (isLandscape) {
+      // 画布横屏 (Fire TV 默认),需要旋转 90° 显示竖屏内容
+      // 旋转后 1080(原宽) 占用画布的 vh 方向,1920(原高) 占用 vw 方向
+      scale = Math.min(vw / DESIGN_H, vh / DESIGN_W);
+      
+      const scaledW = DESIGN_W * scale;   // 缩放后内容的"原宽" (旋转后是高度方向)
+      const scaledH = DESIGN_H * scale;   // 缩放后内容的"原高" (旋转后是宽度方向)
+      
+      // 旋转 90° 后,内容占画布:水平 scaledH × 垂直 scaledW
+      // 居中位置:左边距 (vw - scaledH) / 2, 上边距 (vh - scaledW) / 2
+      // 但因为 transform-origin: top left 旋转,旋转后内容左上角变到右上方
+      // 我们需要:scale 先把 1080×1920 缩成 scaledW×scaledH
+      // 然后 rotate(90deg) 让它横躺 (左上角不动,内容向右下旋转,变成 scaledH 宽 scaledW 高)
+      // 但 rotate 是基于 top left 的,所以旋转后内容跑到了第四象限 (向下)
+      // 不,rotate(90deg) 顺时针 90° 后:原 (0,0) 还是 (0,0),原 (1080,0) 变成 (0,1080)
+      // 所以旋转后内容在第四象限,需要上移 1920 (原高) → 旋转后变成左移 1920
+      // 不对,让我重新想:
+      // top-left 原点旋转 90° 顺时针,(x,y) 映射到 (-y, x)
+      // 原内容 (0,0) → (0,0)  ✓
+      // 原内容 (1080,0) → (0, 1080)  ← 跑到下方了
+      // 原内容 (0,1920) → (-1920, 0)  ← 跑到画布外左边了
+      // 原内容 (1080, 1920) → (-1920, 1080)
+      // 所以旋转后内容占画布:x ∈ [-1920, 0], y ∈ [0, 1080]
+      // 我需要把它平移到 x ∈ [0, 1920], y ∈ [0, 1080]
+      // 即向右平移 1920 (原高度,缩放后是 scaledH)
+      
+      const tx = scaledH + (vw - scaledH) / 2;
+      const ty = (vh - scaledW) / 2;
+      
+      transform = `translate(${tx}px, ${ty}px) rotate(90deg) scale(${scale})`;
+    } else {
+      // 画布竖屏,直接缩放居中,不旋转
+      scale = Math.min(vw / DESIGN_W, vh / DESIGN_H);
+      const finalW = DESIGN_W * scale;
+      const finalH = DESIGN_H * scale;
+      const tx = (vw - finalW) / 2;
+      const ty = (vh - finalH) / 2;
+      
+      transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+    }
+    
+    app.style.transformOrigin = 'top left';
+    app.style.transform = transform;
+    
+    console.log(`[Adaptive] viewport=${vw}x${vh}, isLandscape=${isLandscape}, scale=${scale.toFixed(3)}`);
+    console.log(`[Adaptive] transform=${transform}`);
   }
-  update();
-  setInterval(update, 2000);
-  document.body.appendChild(d);
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyTransform);
+  } else {
+    applyTransform();
+  }
+  window.addEventListener('resize', applyTransform);
+  window.addEventListener('orientationchange', applyTransform);
+  // WebView 加载完图片字体后再算一次,避免布局抖动
+  window.addEventListener('load', () => setTimeout(applyTransform, 200));
 })();
 </script>
+
 </body>
 </html>
