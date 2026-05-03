@@ -16,7 +16,9 @@ from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from threading import Thread, Lock
 
-from db import get_today_items, get_active_notices, init_db
+from db import (get_today_items, get_active_notices, init_db,
+                get_items_history, get_all_notices_admin, get_admin_stats,
+                mark_done, delete_item, deactivate_notice)
 
 # 添加 CloverWatch 项目到路径
 sys.path.insert(0, "/Users/Apple/PhpstormProjects/CloverWatch")
@@ -271,39 +273,101 @@ def get_data_sync(store_code: str = "san_gabriel") -> dict:
 
 # ── HTTP Server ──────────────────────────────────────────────
 
-class DashboardHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.path.startswith("/api/dashboard"):
-            # 解析 store_code 参数
-            store_code = "san_gabriel"
-            if "?" in self.path:
-                params = self.path.split("?")[1]
-                for p in params.split("&"):
-                    if p.startswith("store="):
-                        store_code = p.split("=")[1]
+def parse_params(path: str) -> dict:
+    """解析 URL 查询参数"""
+    params = {}
+    if "?" in path:
+        for p in path.split("?")[1].split("&"):
+            if "=" in p:
+                k, v = p.split("=", 1)
+                params[k] = v
+    return params
 
+
+class DashboardHandler(BaseHTTPRequestHandler):
+
+    def _json_response(self, data, status=200):
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
+
+    def do_GET(self):
+        path = self.path.split("?")[0]
+
+        if path == "/api/dashboard":
+            params = parse_params(self.path)
+            store_code = params.get("store", "san_gabriel")
             try:
                 data = get_data_sync(store_code)
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps(data, ensure_ascii=False).encode())
+                self._json_response(data)
             except Exception as e:
                 logger.error("API error: %s", e)
-                self.send_response(500)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Access-Control-Allow-Origin", "*")
+                self._json_response({"error": str(e)}, 500)
+
+        elif path == "/api/admin/items":
+            params = parse_params(self.path)
+            store = params.get("store", "san_gabriel")
+            days = int(params.get("days", "7"))
+            item_type = params.get("type") or None
+            status = params.get("status") or None
+            self._json_response(get_items_history(store, days, item_type, status))
+
+        elif path == "/api/admin/notices":
+            params = parse_params(self.path)
+            store = params.get("store", "san_gabriel")
+            self._json_response(get_all_notices_admin(store))
+
+        elif path == "/api/admin/stats":
+            params = parse_params(self.path)
+            store = params.get("store", "san_gabriel")
+            self._json_response(get_admin_stats(store))
+
+        elif path == "/admin":
+            admin_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "admin.html")
+            if os.path.exists(admin_file):
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Cache-Control", "no-cache")
                 self.end_headers()
-                self.wfile.write(json.dumps({"error": str(e)}).encode())
+                with open(admin_file, "rb") as f:
+                    self.wfile.write(f.read())
+            else:
+                self.send_response(404)
+                self.end_headers()
+
         else:
             self.send_response(404)
             self.end_headers()
 
+    def do_POST(self):
+        path = self.path.split("?")[0]
+        content_len = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(content_len)) if content_len > 0 else {}
+
+        if path.startswith("/api/admin/items/") and path.endswith("/done"):
+            item_id = int(path.split("/")[4])
+            ok = mark_done(item_id, body.get("done_by", "Admin"))
+            self._json_response({"ok": ok})
+
+        elif path.startswith("/api/admin/items/") and path.endswith("/delete"):
+            item_id = int(path.split("/")[4])
+            ok = delete_item(item_id)
+            self._json_response({"ok": ok})
+
+        elif path.startswith("/api/admin/notices/") and path.endswith("/deactivate"):
+            notice_id = int(path.split("/")[4])
+            ok = deactivate_notice(notice_id)
+            self._json_response({"ok": ok})
+
+        else:
+            self._json_response({"error": "not found"}, 404)
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "*")
         self.end_headers()
 

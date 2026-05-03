@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iFixForU Dashboard Admin</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0f172a; --bg2: #1e293b; --bg3: #334155; --border: #475569;
+  --text: #f1f5f9; --text2: #94a3b8; --text3: #64748b;
+  --blue: #3b82f6; --green: #22c55e; --red: #ef4444; --yellow: #eab308;
+  --orange: #f97316; --purple: #a855f7; --cyan: #06b6d4;
+}
+body { font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+a { color: var(--blue); text-decoration: none; }
+
+/* Header */
+.header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+.header h1 { font-size: 20px; font-weight: 600; }
+.header h1 span { color: var(--blue); }
+.header-right { display: flex; gap: 12px; align-items: center; }
+.header-right select { background: var(--bg3); color: var(--text); border: 1px solid var(--border); padding: 6px 12px; border-radius: 6px; font-size: 13px; }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; padding: 20px 24px; }
+.stat-card { background: var(--bg2); border-radius: 10px; padding: 16px; border: 1px solid var(--border); }
+.stat-card .value { font-size: 28px; font-weight: 700; }
+.stat-card .label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.stat-card.green .value { color: var(--green); }
+.stat-card.blue .value { color: var(--blue); }
+.stat-card.yellow .value { color: var(--yellow); }
+.stat-card.purple .value { color: var(--purple); }
+.stat-card.cyan .value { color: var(--cyan); }
+
+/* Tabs */
+.tabs { display: flex; gap: 0; padding: 0 24px; border-bottom: 1px solid var(--border); }
+.tab { padding: 12px 20px; font-size: 14px; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* Filters */
+.filters { display: flex; gap: 10px; padding: 16px 24px; flex-wrap: wrap; align-items: center; }
+.filters select, .filters input { background: var(--bg2); color: var(--text); border: 1px solid var(--border); padding: 8px 12px; border-radius: 6px; font-size: 13px; }
+.filters .btn { padding: 8px 16px; border-radius: 6px; border: none; font-size: 13px; cursor: pointer; font-weight: 500; }
+.filters .btn-primary { background: var(--blue); color: white; }
+.filters .btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+
+/* Table */
+.table-wrap { padding: 0 24px 24px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+thead th { text-align: left; padding: 10px 12px; color: var(--text2); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid rgba(71,85,105,0.3); vertical-align: middle; }
+tbody tr:hover { background: rgba(59,130,246,0.05); }
+
+/* Badges */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+.badge-pending { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.badge-done { background: rgba(34,197,94,0.15); color: var(--green); }
+.badge-urgent { background: rgba(239,68,68,0.15); color: var(--red); }
+.badge-type { background: rgba(59,130,246,0.12); color: var(--blue); }
+.badge-active { background: rgba(34,197,94,0.15); color: var(--green); }
+.badge-inactive { background: rgba(100,116,139,0.2); color: var(--text3); }
+
+/* Actions */
+.action-btn { padding: 4px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-size: 12px; cursor: pointer; margin-right: 4px; transition: all 0.15s; }
+.action-btn:hover { background: var(--border); }
+.action-btn.done-btn:hover { background: rgba(34,197,94,0.2); border-color: var(--green); color: var(--green); }
+.action-btn.del-btn:hover { background: rgba(239,68,68,0.2); border-color: var(--red); color: var(--red); }
+
+/* Content cell */
+.item-content { max-width: 300px; }
+.item-content .emoji { font-size: 16px; margin-right: 6px; }
+.item-content .text { line-height: 1.4; }
+.item-meta { font-size: 11px; color: var(--text3); margin-top: 3px; }
+
+/* Empty state */
+.empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+.empty .icon { font-size: 48px; opacity: 0.3; margin-bottom: 12px; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .filters { flex-direction: column; }
+  .header { flex-direction: column; gap: 10px; }
+}
+
+/* Loading */
+.loading { text-align: center; padding: 40px; color: var(--text3); }
+.spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg2); border: 1px solid var(--border); padding: 12px 20px; border-radius: 8px; font-size: 14px; z-index: 1000; opacity: 0; transition: opacity 0.3s; }
+.toast.show { opacity: 1; }
+.toast.success { border-color: var(--green); }
+.toast.error { border-color: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>iFixForU</span> Dashboard Admin</h1>
+  <div class="header-right">
+    <select id="daySelect">
+      <option value="1">Today</option>
+      <option value="3">Last 3 Days</option>
+      <option value="7" selected>Last 7 Days</option>
+      <option value="14">Last 14 Days</option>
+      <option value="30">Last 30 Days</option>
+    </select>
+    <select id="storeSelect">
+      <option value="san_gabriel">San Gabriel</option>
+      <option value="monterey_park">Monterey Park</option>
+      <option value="arcadia_1">Arcadia 1</option>
+      <option value="arcadia_2">Arcadia 2</option>
+      <option value="irvine">Irvine</option>
+      <option value="rancho_cucamonga">Rancho Cucamonga</option>
+      <option value="las_vegas">Las Vegas</option>
+      <option value="rowland_heights">Rowland Heights</option>
+    </select>
+  </div>
+</div>
+
+<div class="stats-grid" id="statsGrid">
+  <div class="stat-card blue"><div class="value" id="statToday">-</div><div class="label">Today Total</div></div>
+  <div class="stat-card green"><div class="value" id="statDone">-</div><div class="label">Completed</div></div>
+  <div class="stat-card yellow"><div class="value" id="statPending">-</div><div class="label">Pending</div></div>
+  <div class="stat-card purple"><div class="value" id="statWeek">-</div><div class="label">This Week</div></div>
+  <div class="stat-card cyan"><div class="value" id="statNotices">-</div><div class="label">Active Notices</div></div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="items">Board Items</div>
+  <div class="tab" data-tab="notices">Notices</div>
+</div>
+
+<div id="itemsPanel">
+  <div class="filters">
+    <select id="filterType">
+      <option value="">All Types</option>
+      <option value="customer_followup">Customer Followup</option>
+      <option value="incoming_inventory">Incoming Inventory</option>
+      <option value="handoff">Handoff</option>
+      <option value="repair_pending">Repair Pending</option>
+      <option value="todo">Todo</option>
+    </select>
+    <select id="filterStatus">
+      <option value="">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="done">Done</option>
+    </select>
+    <button class="btn btn-primary" onclick="loadItems()">Refresh</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Type</th>
+          <th>Content</th>
+          <th>Status</th>
+          <th>Creator</th>
+          <th>Created</th>
+          <th>Due</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="noticesPanel" style="display:none">
+  <div class="filters">
+    <button class="btn btn-primary" onclick="loadNotices()">Refresh</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Content</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Creator</th>
+          <th>Created</th>
+          <th>Expires</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="noticesBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = window.location.origin;
+const $ = id => document.getElementById(id);
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const name = tab.dataset.tab;
+    $('itemsPanel').style.display = name === 'items' ? '' : 'none';
+    $('noticesPanel').style.display = name === 'notices' ? '' : 'none';
+  });
+});
+
+function getStore() { return $('storeSelect').value; }
+function getDays() { return $('daySelect').value; }
+
+function toast(msg, type = 'success') {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  setTimeout(() => el.className = 'toast', 2500);
+}
+
+function formatDate(str) {
+  if (!str) return '-';
+  const d = new Date(str.replace(' ', 'T'));
+  if (isNaN(d)) return str;
+  const m = (d.getMonth() + 1).toString().padStart(2, '0');
+  const day = d.getDate().toString().padStart(2, '0');
+  const h = d.getHours().toString().padStart(2, '0');
+  const min = d.getMinutes().toString().padStart(2, '0');
+  return `${m}-${day} ${h}:${min}`;
+}
+
+const TYPE_EMOJI = {
+  customer_followup: '📞', incoming_inventory: '📦', handoff: '🔄',
+  repair_pending: '🔧', todo: '✏️'
+};
+const TYPE_LABEL = {
+  customer_followup: 'Customer', incoming_inventory: 'Inventory', handoff: 'Handoff',
+  repair_pending: 'Repair', todo: 'Todo'
+};
+
+async function loadStats() {
+  try {
+    const resp = await fetch(`${API}/api/admin/stats?store=${getStore()}`);
+    const d = await resp.json();
+    $('statToday').textContent = d.today_total;
+    $('statDone').textContent = d.today_done;
+    $('statPending').textContent = d.today_pending;
+    $('statWeek').textContent = d.week_total;
+    $('statNotices').textContent = d.active_notices;
+  } catch (e) {
+    console.error('Stats error:', e);
+  }
+}
+
+async function loadItems() {
+  const body = $('itemsBody');
+  body.innerHTML = '<tr><td colspan="8"><div class="loading"><div class="spinner"></div></div></td></tr>';
+
+  try {
+    const type = $('filterType').value;
+    const status = $('filterStatus').value;
+    let url = `${API}/api/admin/items?store=${getStore()}&days=${getDays()}`;
+    if (type) url += `&type=${type}`;
+    if (status) url += `&status=${status}`;
+
+    const resp = await fetch(url);
+    const items = await resp.json();
+
+    if (!items.length) {
+      body.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="icon">📋</div>No items found</div></td></tr>';
+      return;
+    }
+
+    body.innerHTML = items.map(item => {
+      const typeEmoji = TYPE_EMOJI[item.type] || '📌';
+      const typeLabel = TYPE_LABEL[item.type] || item.type;
+      const statusBadge = item.status === 'done'
+        ? '<span class="badge badge-done">Done</span>'
+        : '<span class="badge badge-pending">Pending</span>';
+      const urgentBadge = item.urgent ? ' <span class="badge badge-urgent">Urgent</span>' : '';
+      const meta = item.meta || {};
+      const metaParts = [];
+      if (meta.ticket) metaParts.push('🎫 ' + meta.ticket);
+      if (meta.phone) metaParts.push('📱 ' + meta.phone);
+      if (meta.amount) metaParts.push('💰 $' + meta.amount);
+      if (meta.source) metaParts.push('📦 ' + meta.source);
+      const metaHtml = metaParts.length ? '<div class="item-meta">' + metaParts.join(' &middot; ') + '</div>' : '';
+      const due = item.due_date ? (item.due_time ? item.due_date + ' ' + item.due_time : item.due_date) : '-';
+      const actions = item.status === 'pending'
+        ? `<button class="action-btn done-btn" onclick="markDone(${item.id})">✓ Done</button><button class="action-btn del-btn" onclick="deleteItem(${item.id})">✕ Delete</button>`
+        : `<span style="font-size:12px;color:var(--text3)">${item.done_by ? 'by ' + item.done_by : ''}</span>`;
+
+      return `<tr>
+        <td style="color:var(--text3)">#${item.id}</td>
+        <td><span class="badge badge-type">${typeEmoji} ${typeLabel}</span></td>
+        <td><div class="item-content"><span class="text">${item.content}</span>${metaHtml}</div></td>
+        <td>${statusBadge}${urgentBadge}</td>
+        <td style="color:var(--text2)">${item.creator_name || '-'}</td>
+        <td style="color:var(--text2);white-space:nowrap">${formatDate(item.created_at)}</td>
+        <td style="color:var(--text2);white-space:nowrap">${due}</td>
+        <td style="white-space:nowrap">${actions}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    body.innerHTML = `<tr><td colspan="8"><div class="empty">Error: ${e.message}</div></td></tr>`;
+  }
+}
+
+async function loadNotices() {
+  const body = $('noticesBody');
+  body.innerHTML = '<tr><td colspan="8"><div class="loading"><div class="spinner"></div></div></td></tr>';
+
+  try {
+    const resp = await fetch(`${API}/api/admin/notices?store=${getStore()}`);
+    const notices = await resp.json();
+
+    if (!notices.length) {
+      body.innerHTML = '<tr><td colspan="8"><div class="empty"><div class="icon">📢</div>No notices</div></td></tr>';
+      return;
+    }
+
+    body.innerHTML = notices.map(n => {
+      const statusBadge = n.active
+        ? '<span class="badge badge-active">Active</span>'
+        : '<span class="badge badge-inactive">Inactive</span>';
+      const actions = n.active
+        ? `<button class="action-btn del-btn" onclick="deactivateNotice(${n.id})">Deactivate</button>`
+        : '';
+      return `<tr>
+        <td style="color:var(--text3)">#${n.id}</td>
+        <td><span style="margin-right:6px">${n.display_emoji}</span>${n.content}</td>
+        <td>${n.priority}</td>
+        <td>${statusBadge}</td>
+        <td style="color:var(--text2)">${n.creator_name || '-'}</td>
+        <td style="color:var(--text2);white-space:nowrap">${formatDate(n.created_at)}</td>
+        <td style="color:var(--text2)">${n.expires_at || 'Never'}</td>
+        <td>${actions}</td>
+      </tr>`;
+    }).join('');
+  } catch (e) {
+    body.innerHTML = `<tr><td colspan="8"><div class="empty">Error: ${e.message}</div></td></tr>`;
+  }
+}
+
+async function markDone(id) {
+  if (!confirm('Mark #' + id + ' as done?')) return;
+  try {
+    await fetch(`${API}/api/admin/items/${id}/done`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ done_by: 'Admin' }) });
+    toast('✅ #' + id + ' marked as done');
+    loadItems(); loadStats();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteItem(id) {
+  if (!confirm('Delete #' + id + '? This cannot be undone.')) return;
+  try {
+    await fetch(`${API}/api/admin/items/${id}/delete`, { method: 'POST' });
+    toast('🗑 #' + id + ' deleted');
+    loadItems(); loadStats();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function deactivateNotice(id) {
+  if (!confirm('Deactivate notice #' + id + '?')) return;
+  try {
+    await fetch(`${API}/api/admin/notices/${id}/deactivate`, { method: 'POST' });
+    toast('📢 Notice #' + id + ' deactivated');
+    loadNotices(); loadStats();
+  } catch (e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// Auto-refresh on filter change
+$('daySelect').addEventListener('change', () => { loadItems(); loadStats(); });
+$('storeSelect').addEventListener('change', () => { loadItems(); loadNotices(); loadStats(); });
+$('filterType').addEventListener('change', loadItems);
+$('filterStatus').addEventListener('change', loadItems);
+
+// Initial load
+loadStats();
+loadItems();
+loadNotices();
+
+// Auto-refresh every 30s
+setInterval(() => { loadStats(); loadItems(); }, 30000);
+</script>
+</body>
+</html>

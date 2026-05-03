@@ -186,6 +186,124 @@ def get_item(item_id: int) -> Optional[dict]:
     return dict(row) if row else None
 
 
+# ── Admin 查询 ────────────────────────────────────────────────
+
+def get_items_history(store_code: str, days: int = 7, item_type: str = None, status: str = None) -> list:
+    """获取最近 N 天的 board items（Admin 用，不限 today）"""
+    conn = get_conn()
+    sql = "SELECT * FROM board_items WHERE store_code = ? AND created_at >= datetime('now', 'localtime', ?)"
+    params = [store_code, f"-{days} days"]
+    if item_type:
+        sql += " AND type = ?"
+        params.append(item_type)
+    if status:
+        sql += " AND status = ?"
+        params.append(status)
+    sql += " ORDER BY created_at DESC"
+    rows = conn.execute(sql, params).fetchall()
+    conn.close()
+    return [item_to_admin_format(r) for r in rows]
+
+
+def get_all_notices_admin(store_code: str) -> list:
+    """获取所有公告（Admin 用，含过期和非活跃）"""
+    conn = get_conn()
+    rows = conn.execute(
+        "SELECT * FROM notices WHERE store_code = ? ORDER BY created_at DESC",
+        (store_code,),
+    ).fetchall()
+    conn.close()
+    return [notice_to_admin_format(r) for r in rows]
+
+
+def get_admin_stats(store_code: str) -> dict:
+    """Admin 统计摘要"""
+    conn = get_conn()
+    today = date.today().isoformat()
+    today_total = conn.execute(
+        "SELECT COUNT(*) FROM board_items WHERE store_code = ? AND date(created_at) = ?",
+        (store_code, today),
+    ).fetchone()[0]
+    today_done = conn.execute(
+        "SELECT COUNT(*) FROM board_items WHERE store_code = ? AND date(created_at) = ? AND status = 'done'",
+        (store_code, today),
+    ).fetchone()[0]
+    week_total = conn.execute(
+        "SELECT COUNT(*) FROM board_items WHERE store_code = ? AND created_at >= datetime('now', 'localtime', '-7 days')",
+        (store_code,),
+    ).fetchone()[0]
+    active_notices = conn.execute(
+        "SELECT COUNT(*) FROM notices WHERE store_code = ? AND active = 1",
+        (store_code,),
+    ).fetchone()[0]
+    by_type = {}
+    for row in conn.execute(
+        "SELECT type, COUNT(*) as cnt FROM board_items WHERE store_code = ? AND date(created_at) = ? GROUP BY type",
+        (store_code, today),
+    ).fetchall():
+        by_type[row[0]] = row[1]
+    conn.close()
+    return {
+        "today_total": today_total,
+        "today_done": today_done,
+        "today_pending": today_total - today_done,
+        "week_total": week_total,
+        "active_notices": active_notices,
+        "by_type": by_type,
+    }
+
+
+def deactivate_notice(notice_id: int) -> bool:
+    """停用公告"""
+    conn = get_conn()
+    cur = conn.execute("UPDATE notices SET active = 0 WHERE id = ?", (notice_id,))
+    ok = cur.rowcount > 0
+    conn.commit()
+    conn.close()
+    return ok
+
+
+def item_to_admin_format(row) -> dict:
+    """Admin 格式：包含所有字段"""
+    r = dict(row)
+    return {
+        "id": r["id"],
+        "type": r["type"],
+        "label": TYPE_LABELS.get(r["type"], r["type"]),
+        "content": r["content"],
+        "display_emoji": r["display_emoji"],
+        "status": r["status"],
+        "urgent": bool(r.get("urgent")),
+        "creator_name": r.get("creator_name", ""),
+        "done_by": r.get("done_by", ""),
+        "created_at": r.get("created_at", ""),
+        "updated_at": r.get("updated_at", ""),
+        "due_date": r.get("due_date", ""),
+        "due_time": r.get("due_time", ""),
+        "meta": {
+            "ticket": r.get("meta_ticket"),
+            "phone": r.get("meta_phone"),
+            "amount": r.get("meta_amount"),
+            "paid": bool(r.get("meta_paid")),
+            "source": r.get("meta_source"),
+        },
+    }
+
+
+def notice_to_admin_format(row) -> dict:
+    r = dict(row)
+    return {
+        "id": r["id"],
+        "content": r["content"],
+        "display_emoji": r.get("display_emoji", "📢"),
+        "priority": r.get("priority", 1),
+        "active": bool(r.get("active", 1)),
+        "creator_name": r.get("creator_name", ""),
+        "created_at": r.get("created_at", ""),
+        "expires_at": r.get("expires_at"),
+    }
+
+
 # ── 格式转换 ─────────────────────────────────────────────────
 
 TYPE_LABELS = {
