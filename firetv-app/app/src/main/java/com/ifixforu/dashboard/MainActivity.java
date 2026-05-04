@@ -99,8 +99,13 @@ public class MainActivity extends Activity {
         };
         handler.postDelayed(reloadRunnable, RELOAD_INTERVAL_MS);
 
-        // 启动守护服务
-        startService(new Intent(this, WatchdogService.class));
+        // 启动前台守护服务
+        Intent watchdog = new Intent(this, WatchdogService.class);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(watchdog);
+        } else {
+            startService(watchdog);
+        }
     }
 
     @Override
@@ -115,8 +120,8 @@ public class MainActivity extends Activity {
     private void injectHelperScripts(WebView view) {
         String script =
             "(function() {" +
-            "  if (typeof CONFIG !== 'undefined') { CONFIG.API_BASE = 'http://64.62.248.68:8889'; CONFIG.REFRESH_INTERVAL = 5000; }" +
-            "  if (typeof MOCK_DATA !== 'undefined') { MOCK_DATA.reviews = MOCK_DATA.reviews || {}; MOCK_DATA.reviews.wechat = { total: 6145 }; MOCK_DATA.items = []; MOCK_DATA.notices = []; }" +
+            "  if (typeof CONFIG !== 'undefined') { CONFIG.API_BASE = 'http://64.62.248.68:8889'; CONFIG.STORE_CODE = 'arcadia_1'; CONFIG.REFRESH_INTERVAL = 5000; }" +
+            "  if (typeof MOCK_DATA !== 'undefined') { MOCK_DATA.items = []; MOCK_DATA.notices = []; }" +
 
             // 2. CSS overrides
             "  var old = document.getElementById('ifixforu-apk-overrides');" +
@@ -244,7 +249,8 @@ public class MainActivity extends Activity {
             "          if (nextEl && tomSched) { nextEl.textContent = '\\u660e\\u65e5\\u5f53\\u73ed: ' + tomSched.join(', '); }" +
             "          else if (nextEl) { nextEl.textContent = '\\u660e\\u65e5\\u5f53\\u73ed: \\u672a\\u6392\\u73ed'; }" +
             "          var hoursEl = document.getElementById('shiftHours');" +
-            "          if (hoursEl) hoursEl.textContent = shift.hours || '10:00 - 19:00';" +
+            "          if (hoursEl) hoursEl.style.display = 'none';" +
+            "          if (nextEl) { nextEl.style.fontSize = '28px'; nextEl.style.fontWeight = '700'; }" +
             "        } catch(e) {}" +
             "      }; renderShift.__patched = true; window.renderShift = renderShift;" +
             "    }" +
@@ -255,12 +261,12 @@ public class MainActivity extends Activity {
             "      var el = document.querySelector('.rev-cat.' + key);" +
             "      if (!el) return;" +
             "      var iconEl = el.querySelector('.rev-cat-icon');" +
-            "      if (iconEl) iconEl.textContent = catMap[key].icon;" +
+            "      if (iconEl) { iconEl.textContent = catMap[key].icon; iconEl.style.fontSize = '24px'; }" +
             "      if (!el.querySelector('.rev-cat-label')) {" +
             "        var lbl = document.createElement('span');" +
             "        lbl.className = 'rev-cat-label';" +
             "        lbl.textContent = catMap[key].label;" +
-            "        lbl.style.cssText = 'font-size:11px;color:rgba(255,255,255,0.6);font-family:var(--font-mono);letter-spacing:1px;';" +
+            "        lbl.style.cssText = 'font-size:20px;color:rgba(255,255,255,0.6);font-family:var(--font-mono);letter-spacing:1px;';" +
             "        el.insertBefore(lbl, iconEl.nextSibling);" +
             "      }" +
             "    });" +
@@ -270,8 +276,8 @@ public class MainActivity extends Activity {
             "    if (catsContainer && !document.getElementById('otherAmt')) {" +
             "      var otherDiv = document.createElement('div');" +
             "      otherDiv.className = 'rev-cat other';" +
-            "      otherDiv.innerHTML = '<span class=\"rev-cat-icon\">\\ud83d\\udccb</span>' +" +
-            "        '<span class=\"rev-cat-label\" style=\"font-size:11px;color:rgba(255,255,255,0.6);font-family:var(--font-mono);letter-spacing:1px;\">\\u5176\\u4ed6</span>' +" +
+            "      otherDiv.innerHTML = '<span class=\"rev-cat-icon\" style=\"font-size:24px\">\\ud83d\\udccb</span>' +" +
+            "        '<span class=\"rev-cat-label\" style=\"font-size:20px;color:rgba(255,255,255,0.6);font-family:var(--font-mono);letter-spacing:1px;\">\\u5176\\u4ed6</span>' +" +
             "        '<span class=\"rev-cat-amount\" id=\"otherAmt\">$0</span>' +" +
             "        '<span class=\"rev-cat-pct\" id=\"otherPct\">0%</span>';" +
             "      catsContainer.appendChild(otherDiv);" +

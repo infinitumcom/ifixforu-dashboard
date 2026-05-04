@@ -20,6 +20,8 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
+from db import get_wechat_total, init_db, get_today_items, get_active_notices
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -266,7 +268,7 @@ async def fetch_all_data(store_code="san_gabriel"):
                                 key=lambda x: x["revenue"], reverse=True)
 
     return {
-        "store": {"code": store_code, "display_name_en": cs.get("display_name_en", ""), "monthly_target": 65000},
+        "store": {"code": store_code, "display_name_en": cs.get("display_name_en", ""), "monthly_target": STORE_TARGETS.get(store_code, 65000)},
         "sales": {"daily_revenue": cs.get("daily_revenue", 0) / 100, "daily_orders": cs.get("daily_orders", 0), "monthly_revenue": current_monthly},
         "revenue_breakdown": {k: breakdown.get(k, 0) / 100 for k in ("repair", "activation", "accessory", "sales")},
         "rankings": rankings,
@@ -276,25 +278,66 @@ async def fetch_all_data(store_code="san_gabriel"):
         "updated_at": now.isoformat(),
     }
 
+# ── 门店目标 & 评论数据 ───────────────────────────────────────
+STORE_TARGETS = {
+    "san_gabriel": 65000,
+    "arcadia_1": 15000,
+    "monterey_park": 50000,
+    "arcadia_2": 40000,
+    "irvine": 40000,
+    "rancho_cucamonga": 40000,
+    "las_vegas": 50000,
+    "rowland_heights": 40000,
+}
+
+STORE_REVIEWS = {
+    "san_gabriel": {"google": {"rating": 4.6, "total": 153}, "yelp": {"rating": 4.5, "total": 295}},
+    "arcadia_1": {"google": {"rating": 4.5, "total": 142}, "yelp": {"rating": 4.7, "total": 611}},
+}
+
 # ── 缓存 ─────────────────────────────────────────────────────
 cache_lock = Lock()
-cached_data = None
-cached_time = None
-CACHE_TTL = 60
+cached_data = {}
+cached_time = {}
+CACHE_TTL = 5
 
 def get_data_sync(store_code="san_gabriel"):
     global cached_data, cached_time
     with cache_lock:
-        if cached_data and cached_time and (datetime.now().timestamp() - cached_time) < CACHE_TTL:
-            return cached_data
+        if store_code in cached_data and store_code in cached_time and (datetime.now().timestamp() - cached_time[store_code]) < CACHE_TTL:
+            return cached_data[store_code]
     loop = asyncio.new_event_loop()
     try:
         data = loop.run_until_complete(fetch_all_data(store_code))
     finally:
         loop.close()
+    # 注入看板数据
+    try:
+        data["items"] = get_today_items(store_code)
+        data["notices"] = get_active_notices(store_code)
+    except Exception as e:
+        logger.error("获取看板数据失败: %s", e)
+        data.setdefault("items", [])
+        data.setdefault("notices", [])
+
+    # 评论数据（Yelp / Google / 微信）
+    try:
+        data.setdefault("reviews", {})
+        # 注入门店 Yelp/Google 评论数据
+        store_reviews = STORE_REVIEWS.get(store_code, {})
+        if "google" in store_reviews:
+            data["reviews"]["google"] = store_reviews["google"]
+        if "yelp" in store_reviews:
+            data["reviews"]["yelp"] = store_reviews["yelp"]
+        # 微信好友实时数据
+        wechat_data = get_wechat_total(store_code)
+        data["reviews"]["wechat"] = {"total": wechat_data["total"], "today_added": wechat_data["today_added"]}
+    except Exception as e:
+        logger.error("获取评论数据失败: %s", e)
+
     with cache_lock:
-        cached_data = data
-        cached_time = datetime.now().timestamp()
+        cached_data[store_code] = data
+        cached_time[store_code] = datetime.now().timestamp()
     return data
 
 # ── HTTP Server ──────────────────────────────────────────────
@@ -367,7 +410,9 @@ class DashboardHandler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    init_db()
     port = 8889
+    HTTPServer.allow_reuse_address = True
     server = HTTPServer(("0.0.0.0", port), DashboardHandler)
     logger.info("Dashboard server running on http://0.0.0.0:%d", port)
     logger.info("Dashboard: http://0.0.0.0:%d/", port)

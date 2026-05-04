@@ -122,16 +122,15 @@ def add_notice(store_code: str, notice: dict) -> int:
 
 
 def get_today_items(store_code: str) -> list:
-    """获取今日 pending 的 board items（按 urgent 降序、创建时间升序）"""
+    """获取所有 pending 的 board items（未完成的持续显示，不限创建日期）"""
     conn = get_conn()
-    today = date.today().isoformat()
     rows = conn.execute(
         """SELECT * FROM board_items
            WHERE store_code = ?
              AND status = 'pending'
-             AND date(created_at) = ?
-           ORDER BY urgent DESC, created_at ASC""",
-        (store_code, today),
+             AND type != 'wechat_report'
+           ORDER BY urgent DESC, created_at DESC""",
+        (store_code,),
     ).fetchall()
     conn.close()
     return [item_to_api_format(r) for r in rows]
@@ -312,6 +311,7 @@ TYPE_LABELS = {
     "handoff": "交班事项",
     "repair_pending": "维修等待",
     "todo": "待办",
+    "wechat_report": "微信报备",
 }
 
 
@@ -360,6 +360,34 @@ def notice_to_api_format(row) -> dict:
         "creator": r.get("creator_name", ""),
         "created_at": r.get("created_at", ""),
     }
+
+
+# ── 微信好友统计 ───────────────────────────────────────────────
+
+WECHAT_BASELINES = {
+    "san_gabriel": 6148,
+    "arcadia_1": 94,
+}
+
+
+def _get_baseline(store_code: str) -> int:
+    return WECHAT_BASELINES.get(store_code, 0)
+
+
+def get_wechat_total(store_code: str) -> dict:
+    """获取微信好友累计总数和今日新增"""
+    conn = get_conn()
+    today = date.today().isoformat()
+    today_added = conn.execute(
+        "SELECT COALESCE(SUM(meta_amount), 0) FROM board_items "
+        "WHERE store_code = ? AND type = 'wechat_report' AND date(created_at) = ?",
+        (store_code, today)).fetchone()[0]
+    all_added = conn.execute(
+        "SELECT COALESCE(SUM(meta_amount), 0) FROM board_items "
+        "WHERE store_code = ? AND type = 'wechat_report'",
+        (store_code,)).fetchone()[0]
+    conn.close()
+    return {"today_added": int(today_added), "total": _get_baseline(store_code) + int(all_added)}
 
 
 # 启动时自动建表

@@ -1,8 +1,8 @@
 """
-SG 门店 Dashboard Bot — Telegram 长轮询
+AR1 门店 Dashboard Bot — Telegram 长轮询
 接收群消息 → Claude 分类 → 存入 SQLite → 看板显示
 
-启动: python3 dashboard_bot.py
+启动: python3 dashboard_bot_ar1.py
 """
 
 from __future__ import annotations
@@ -20,15 +20,15 @@ from classifier import classify_message
 
 # ── 配置 ─────────────────────────────────────────────────────
 
-SG_BOT_TOKEN = "8668095541:AAEJw71XFFu_VTociX-Xam1D0xsKHjrIe2Y"
-SG_STORE_CODE = "san_gabriel"
-TELEGRAM_API = f"https://api.telegram.org/bot{SG_BOT_TOKEN}"
+AR1_BOT_TOKEN = "8194812093:AAHQVT1uGEqqFqQwZ3cz8VkMNnZgM_b_v-s"
+AR1_STORE_CODE = "arcadia_1"
+TELEGRAM_API = f"https://api.telegram.org/bot{AR1_BOT_TOKEN}"
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.FileHandler(os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard_bot.log")),
+        logging.FileHandler(os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard_bot_ar1.log")),
         logging.StreamHandler(),
     ],
 )
@@ -131,7 +131,7 @@ async def cmd_delete(chat_id: str, args: str) -> None:
 
 async def cmd_list(chat_id: str) -> None:
     """显示今日看板摘要"""
-    items = get_today_items(SG_STORE_CODE)
+    items = get_today_items(AR1_STORE_CODE)
     if not items:
         await send_message(chat_id, "📋 今日看板为空")
         return
@@ -147,7 +147,7 @@ async def cmd_list(chat_id: str) -> None:
 
 async def cmd_notices(chat_id: str) -> None:
     """显示当前公告"""
-    notices = get_active_notices(SG_STORE_CODE)
+    notices = get_active_notices(AR1_STORE_CODE)
     if not notices:
         await send_message(chat_id, "📢 当前无公告")
         return
@@ -180,8 +180,8 @@ async def cmd_wechat(chat_id: str, args: str, msg_id: int, sender_name: str) -> 
         "telegram_chat_id": str(chat_id),
         "meta": {"amount": amount},
     }
-    add_item(SG_STORE_CODE, item)
-    wechat = get_wechat_total(SG_STORE_CODE)
+    add_item(AR1_STORE_CODE, item)
+    wechat = get_wechat_total(AR1_STORE_CODE)
     await send_message(
         chat_id,
         f"💚 微信好友已记录: +{amount}人 (今日+{wechat['today_added']}，累计{wechat['total']:,})",
@@ -191,7 +191,7 @@ async def cmd_wechat(chat_id: str, args: str, msg_id: int, sender_name: str) -> 
 
 async def cmd_help(chat_id: str) -> None:
     text = (
-        "📖 SG Dashboard Bot 命令\n"
+        "📖 AR1 Dashboard Bot 命令\n"
         "\n"
         "发送自然语言消息即可自动添加到看板\n"
         "例: \"王先生下午3点来取iPhone 15 Pro\"\n"
@@ -235,7 +235,6 @@ async def handle_callback(callback_query: dict) -> None:
         item_id = int(data.split(":")[1])
         if mark_done(item_id, sender_name):
             await answer_callback(cb_id, f"#{item_id} 已完成!")
-            # 更新原消息，去掉按钮，加上完成标记
             old_text = msg.get("text", "")
             await edit_message(chat_id, message_id, old_text + f"\n\n✅ 已完成 (by {sender_name})")
         else:
@@ -269,7 +268,6 @@ async def handle_natural_message(chat_id: str, msg_id: int, text: str, sender_na
     """自然语言消息 → 分类 → 存储 → 回复确认（带完成按钮）"""
     result = classify_message(text, sender_name)
 
-    # Claude 可能返回数组（一条消息包含多个任务）
     if isinstance(result, list):
         items = result
     else:
@@ -281,12 +279,10 @@ async def handle_natural_message(chat_id: str, msg_id: int, text: str, sender_na
 
 async def _process_one_item(chat_id: str, msg_id: int, result: dict, sender_name: str) -> None:
     """处理单条分类结果"""
-    # 跳过非工作内容
     if result.get("skip"):
         logger.info("跳过非工作消息")
         return
 
-    # 补充 today 日期
     if not result.get("due_date"):
         result["due_date"] = date.today().isoformat()
 
@@ -298,7 +294,7 @@ async def _process_one_item(chat_id: str, msg_id: int, result: dict, sender_name
     label = TYPE_LABELS.get(msg_type, msg_type)
 
     if msg_type == "notice":
-        notice_id = add_notice(SG_STORE_CODE, result)
+        notice_id = add_notice(AR1_STORE_CODE, result)
         await send_message(
             chat_id,
             f"✅ 公告已发布 #{notice_id}: {result.get('content', '')}",
@@ -311,27 +307,25 @@ async def _process_one_item(chat_id: str, msg_id: int, result: dict, sender_name
         source_mode = meta.get("source", "increment")
 
         if source_mode == "total":
-            # 用户报告的是总数，计算增量
-            current = get_wechat_total(SG_STORE_CODE)
+            current = get_wechat_total(AR1_STORE_CODE)
             amount = max(0, raw_amount - current["total"])
             if amount == 0:
                 await send_message(chat_id, f"💚 当前微信好友已是 {current['total']:,}，无新增", reply_to=msg_id)
                 return
-            # 修正 meta.amount 为实际增量
             result["meta"]["amount"] = amount
             result["content"] = f"今日新增{amount}人"
         else:
             amount = raw_amount
 
-        item_id = add_item(SG_STORE_CODE, result)
-        wechat = get_wechat_total(SG_STORE_CODE)
+        item_id = add_item(AR1_STORE_CODE, result)
+        wechat = get_wechat_total(AR1_STORE_CODE)
         await send_message(
             chat_id,
             f"💚 微信好友已记录: +{amount}人 (今日+{wechat['today_added']}，累计{wechat['total']:,})",
             reply_to=msg_id,
         )
     else:
-        item_id = add_item(SG_STORE_CODE, result)
+        item_id = add_item(AR1_STORE_CODE, result)
         urgent_tag = " 🔴急" if result.get("urgent") else ""
         time_tag = f" ⏰{result['due_time']}" if result.get("due_time") else ""
         await send_message(
@@ -373,9 +367,7 @@ async def handle_message(chat_id: str, msg_id: int, user_id: str, text: str, sen
             await cmd_wechat(chat_id, args, msg_id, sender_name)
         elif cmd in ("/help", "/start"):
             await cmd_help(chat_id)
-        # 其他命令忽略
     else:
-        # 自然语言消息
         await handle_natural_message(chat_id, msg_id, text, sender_name)
 
 
@@ -387,7 +379,7 @@ async def poll_updates() -> None:
     consecutive_errors = 0
 
     init_db()
-    logger.info("SG Dashboard Bot 已启动 (store: %s)", SG_STORE_CODE)
+    logger.info("AR1 Dashboard Bot 已启动 (store: %s)", AR1_STORE_CODE)
 
     async with httpx.AsyncClient() as client:
         while True:
@@ -409,7 +401,6 @@ async def poll_updates() -> None:
                 for update in updates:
                     offset = update["update_id"] + 1
 
-                    # 处理 inline 按钮回调
                     if "callback_query" in update:
                         asyncio.create_task(handle_callback(update["callback_query"]))
                         continue
@@ -421,7 +412,6 @@ async def poll_updates() -> None:
                     text = msg.get("text", "").strip()
                     msg_id = msg.get("message_id")
 
-                    # 获取发送者名字
                     from_user = msg.get("from", {})
                     sender_name = from_user.get("first_name", "")
                     if from_user.get("last_name"):

@@ -98,6 +98,7 @@
     gap: 8px;
     padding: 10px 20px;
     overflow: hidden;
+    filter: brightness(1.5) saturate(1.2);
   }
 
   /* ============================================================
@@ -1734,7 +1735,7 @@
 const CONFIG = {
   API_BASE: '',
   STORE_CODE: 'san_gabriel',
-  REFRESH_INTERVAL: 15000,
+  REFRESH_INTERVAL: 5000,
   BOTTOM_ROTATE_INTERVAL: 10000,
   QUOTA_SPLIT: { repair: 0.35, activation: 0.35, accessory: 0.20, sales: 0.10 }
 };
@@ -1744,21 +1745,21 @@ const CONFIG = {
 // Keys: store abbreviation -> array of { name, role }
 // ============================================================
 const WEEKLY_SCHEDULE = {
-  // Mon Apr 28
-  '2026-04-28': {
-    SG: ['Harry Zou', 'Cici'],
+  // Mon May 4
+  '2026-05-04': {
+    SG: ['Chester', 'Harry Zou'],
     AR: ['Kevin Huang'],
     AR3: ['Will Jiang'],
     IR: ['Jason Zeng'],
-    RANCHO: ['Chester'],
+    RANCHO: ['Kelvin Liu'],
     NV: ['Bill Han', 'Grace'],
     RH: ['Steve Shen'],
     MPK: ['Boby Liu']
   },
-  // Tue Apr 29
-  '2026-04-29': {
-    SG: ['Harry Zou', 'Kelvin Liu'],
-    AR: ['Jayden Sun'],
+  // Tue May 5
+  '2026-05-05': {
+    SG: ['Jayden Sun', 'Harry Zou'],
+    AR: ['Kevin Huang'],
     AR3: ['Will Jiang'],
     IR: ['Jason Zeng'],
     RANCHO: ['Boby Liu'],
@@ -1766,9 +1767,9 @@ const WEEKLY_SCHEDULE = {
     RH: ['Chester'],
     MPK: ['Cici']
   },
-  // Wed Apr 30
-  '2026-04-30': {
-    SG: ['Harry Zou', 'Jayden Sun'],
+  // Wed May 6
+  '2026-05-06': {
+    SG: ['Jayden Sun', 'Cici'],
     AR: ['Kevin Huang'],
     AR3: ['Will Jiang'],
     IR: ['Jason Zeng'],
@@ -1777,9 +1778,9 @@ const WEEKLY_SCHEDULE = {
     RH: ['Steve Shen'],
     MPK: ['Boby Liu']
   },
-  // Thu May 1
-  '2026-05-01': {
-    SG: ['Harry Zou', 'Jayden Sun'],
+  // Thu May 7
+  '2026-05-07': {
+    SG: ['Jayden Sun'],
     AR: ['Kevin Huang'],
     AR3: ['Will Jiang'],
     IR: ['Jason Zeng'],
@@ -1788,21 +1789,21 @@ const WEEKLY_SCHEDULE = {
     RH: ['Steve Shen'],
     MPK: ['Cici']
   },
-  // Fri May 2
-  '2026-05-02': {
-    SG: ['Harry Zou'],
-    AR: ['Jayden Sun'],
+  // Fri May 8
+  '2026-05-08': {
+    SG: ['Harry Zou', 'Cici'],
+    AR: ['Chester'],
     AR3: ['Will Jiang'],
     IR: ['Feiyang Zhao'],
     RANCHO: ['Kelvin Liu'],
     NV: ['Bill Han'],
     RH: ['Steve Shen'],
-    MPK: ['Cici']
+    MPK: ['Boby Liu']
   },
-  // Sat May 3
-  '2026-05-03': {
+  // Sat May 9
+  '2026-05-09': {
     SG: ['Harry Zou'],
-    AR: ['Kevin Huang'],
+    AR: ['Jayden Sun'],
     AR3: [],
     IR: ['Feiyang Zhao'],
     RANCHO: ['Kelvin Liu'],
@@ -1810,8 +1811,8 @@ const WEEKLY_SCHEDULE = {
     RH: ['Chester'],
     MPK: ['Cici']
   },
-  // Sun May 4
-  '2026-05-04': {
+  // Sun May 10
+  '2026-05-10': {
     SG: ['Harry Zou'],
     AR: ['Chester'],
     AR3: ['Kelvin Liu'],
@@ -2022,7 +2023,7 @@ async function loadData() {
     // Merge live Clover data into MOCK_DATA structure
     // (keeps items, notices, SOP, combos from MOCK_DATA; replaces revenue/rankings with live)
     const merged = Object.assign({}, MOCK_DATA);
-    merged.store = Object.assign({}, MOCK_DATA.store, live.store);
+    merged.store = live.store;
     merged.sales = live.sales;
     merged.revenue_breakdown = live.revenue_breakdown;
     merged.rankings = live.rankings;
