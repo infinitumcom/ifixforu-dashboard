@@ -299,7 +299,7 @@ STORE_REVIEWS = {
 cache_lock = Lock()
 cached_data = {}
 cached_time = {}
-CACHE_TTL = 5
+CACHE_TTL = 60
 
 def get_data_sync(store_code="san_gabriel"):
     global cached_data, cached_time
@@ -308,7 +308,16 @@ def get_data_sync(store_code="san_gabriel"):
             return cached_data[store_code]
     loop = asyncio.new_event_loop()
     try:
-        data = loop.run_until_complete(fetch_all_data(store_code))
+        data = loop.run_until_complete(asyncio.wait_for(fetch_all_data(store_code), timeout=30))
+    except asyncio.TimeoutError:
+        logger.error("Clover API 超时 (30s), store=%s", store_code)
+        with cache_lock:
+            if store_code in cached_data:
+                return cached_data[store_code]
+        data = {"store": {"code": store_code, "display_name_en": store_code, "monthly_target": STORE_TARGETS.get(store_code, 65000)},
+                "sales": {"daily_revenue": 0, "daily_orders": 0, "monthly_revenue": 0},
+                "revenue_breakdown": {"repair": 0, "activation": 0, "accessory": 0, "sales": 0},
+                "rankings": [], "month_champion": {}, "employee_rankings": [], "store_count": len(STORES), "updated_at": datetime.now(get_tz()).isoformat()}
     finally:
         loop.close()
     # 注入看板数据
