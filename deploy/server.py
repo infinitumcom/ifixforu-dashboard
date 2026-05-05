@@ -299,7 +299,7 @@ STORE_REVIEWS = {
 cache_lock = Lock()
 cached_data = {}
 cached_time = {}
-CACHE_TTL = 60
+CACHE_TTL = 30
 
 def get_data_sync(store_code="san_gabriel"):
     global cached_data, cached_time
