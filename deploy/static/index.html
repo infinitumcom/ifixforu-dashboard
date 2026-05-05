@@ -2956,6 +2956,26 @@ VoiceEngine.init();
 
 // Prevent context menu on TV
 document.addEventListener('contextmenu', e => e.preventDefault());
+
+// ============================================================
+// 夜间屏保：20:30 - 08:30 全黑
+// ============================================================
+(function() {
+  var overlay = document.createElement('div');
+  overlay.id = 'nightOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#000;z-index:99999;display:none;';
+  document.body.appendChild(overlay);
+
+  function checkNightMode() {
+    var now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+    var mins = now.getHours() * 60 + now.getMinutes();
+    var isNight = (mins >= 20 * 60 + 30) || (mins < 8 * 60 + 30);
+    overlay.style.display = isNight ? 'block' : 'none';
+  }
+
+  checkNightMode();
+  setInterval(checkNightMode, 30000);
+})();
 </script>
 
 <script>
