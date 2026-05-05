@@ -365,7 +365,7 @@ def notice_to_api_format(row) -> dict:
 # ── 微信好友统计 ───────────────────────────────────────────────
 
 WECHAT_BASELINES = {
-    "san_gabriel": 6148,
+    "san_gabriel": 6150,
     "arcadia_1": 94,
 }
 
