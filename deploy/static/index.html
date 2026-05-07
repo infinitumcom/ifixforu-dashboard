@@ -2097,9 +2097,9 @@ function setConnectionStatus(status) {
   else { dot.classList.add('warn'); text.textContent = '重新连接中'; }
 
   if (state.lastUpdate) {
-    const t = state.lastUpdate;
+    const pst = new Date(state.lastUpdate.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
     document.getElementById('lastUpdate').textContent =
-      '更新: ' + String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+      '更新: ' + String(pst.getHours()).padStart(2, '0') + ':' + String(pst.getMinutes()).padStart(2, '0');
   }
 }
 
@@ -2714,10 +2714,14 @@ function computeUrgency(item) {
 function formatNumber(n) { return Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 }); }
 
 function formatDueDate(dateStr) {
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const pstNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+  const y = pstNow.getFullYear(), m = String(pstNow.getMonth()+1).padStart(2,'0'), d = String(pstNow.getDate()).padStart(2,'0');
+  const today = y + '-' + m + '-' + d;
+  const tmr = new Date(pstNow); tmr.setDate(tmr.getDate()+1);
+  const tomorrow = tmr.getFullYear() + '-' + String(tmr.getMonth()+1).padStart(2,'0') + '-' + String(tmr.getDate()).padStart(2,'0');
   if (dateStr === today) return '今天';
   if (dateStr === tomorrow) return '明天';
+  if (dateStr < today) return '已过期';
   return dateStr.substring(5).replace('-', '/');
 }
 

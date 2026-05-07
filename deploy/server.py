@@ -160,11 +160,18 @@ async def fetch_payments(merchant_id, start_ms, end_ms, client):
         offset += 100
     return all_payments
 
+MAX_ORDER_CENTS = 5_000_000  # 单笔订单上限 $50,000，超过视为异常数据
+
 def compute_store_stats(orders, payments):
+    # 过滤掉异常金额订单（如 $999,999.99 的测试/录入错误）
+    orders = [o for o in orders if abs(o.get("total", 0)) <= MAX_ORDER_CENTS]
+
     group_totals = defaultdict(int)
     for order in orders:
         for item in order.get("lineItems", {}).get("elements", []):
             price = item.get("price", 0) * item.get("unitQty", 1)
+            if abs(price) > MAX_ORDER_CENTS:
+                continue
             item_cats = item.get("categories", {}).get("elements", [])
             group = classify_category(item_cats[0].get("name", "")) if item_cats else classify_category(item.get("name", ""))
             group_totals[group] += price
@@ -206,6 +213,8 @@ async def fetch_store_data(store, start_ms, end_ms, client):
             fetch_orders(mid, start_ms, end_ms, client),
             fetch_payments(mid, start_ms, end_ms, client),
         )
+        # 过滤异常订单
+        orders = [o for o in orders if abs(o.get("total", 0)) <= MAX_ORDER_CENTS]
         stats = compute_store_stats(orders, payments)
         employee_stats = defaultdict(lambda: {"revenue": 0, "orders": 0})
         for order in orders:
@@ -233,7 +242,7 @@ async def fetch_store_data(store, start_ms, end_ms, client):
 async def fetch_monthly_revenue(store, month_start, end_ms, client):
     try:
         orders = await fetch_orders(store["merchant_id"], month_start, end_ms, client)
-        return sum(o.get("total", 0) for o in orders)
+        return sum(o.get("total", 0) for o in orders if abs(o.get("total", 0)) <= MAX_ORDER_CENTS)
     except Exception as e:
         logger.error("获取 %s 月度数据失败: %s", store["name"], e)
         return 0
