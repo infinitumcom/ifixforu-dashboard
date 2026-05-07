@@ -390,6 +390,7 @@
     color: var(--text-primary);
     font-weight: 500;
     letter-spacing: 0.3px;
+    will-change: transform;
   }
   .notice-strip-track .notice-sep { display: inline-block; margin: 0 20px; color: var(--accent-cyan); font-weight: 700; }
   .notice-strip-track .notice-emoji { margin-right: 6px; font-size: 14px; }
@@ -614,6 +615,7 @@
     font-size: 14px;
     color: var(--text-primary);
     font-weight: 700;
+    transition: opacity 0.3s;
   }
   .rev-cat-pct {
     font-family: var(--font-mono);
@@ -1037,13 +1039,14 @@
     gap: 8px;
     flex: 1;
     min-width: 0;
+    contain: layout style;
   }
   .rank-bar-item.is-current .rank-bar-name { color: var(--brand-blue-light); font-weight: 700; }
 
   .rank-bar-name { font-family: var(--font-body); font-size: 12px; color: var(--text-secondary); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   .rank-bar-track { height: 14px; background: rgba(0, 0, 0, 0.06); border-radius: 100px; overflow: hidden; border: 1px solid var(--border-subtle); }
-  .rank-bar-fill { height: 100%; background: linear-gradient(90deg, var(--brand-blue-deep), var(--brand-blue)); border-radius: 100px; transition: width 1s ease; min-width: 2px; }
+  .rank-bar-fill { height: 100%; background: linear-gradient(90deg, var(--brand-blue-deep), var(--brand-blue)); border-radius: 100px; transition: width 0.6s ease-out; min-width: 2px; }
   .rank-bar-item.is-current .rank-bar-fill { background: linear-gradient(90deg, var(--brand-blue), var(--accent-cyan)); }
 
   .rank-bar-amount { font-family: var(--font-mono); font-size: 12px; color: var(--text-primary); font-weight: 700; text-align: right; }
@@ -2139,6 +2142,8 @@ async function loadData() {
     }
 
     state.prevData = JSON.parse(JSON.stringify(merged));
+    // 保存到 localStorage，下次 reload 可立即恢复
+    try { localStorage.setItem('_dashData', JSON.stringify(merged)); } catch(e2) {}
     setConnectionStatus('connected');
   } catch(e) {
     console.error('API load failed:', e);
@@ -3081,9 +3086,26 @@ window.testUrgent = function() {
 })();
 
 // ============================================================
-// INIT
+// INIT — localStorage 即时恢复（消除 webView.reload 白屏）
 // ============================================================
 updateClock();
+
+// 页面加载时立即从 localStorage 恢复上次数据，用户看不到白屏
+(function restoreCachedData() {
+  try {
+    var cached = localStorage.getItem('_dashData');
+    if (!cached) return;
+    var parsed = JSON.parse(cached);
+    if (!parsed || !parsed.store) return;
+    state.data = parsed;
+    state.lastUpdate = new Date();
+    state.prevData = JSON.parse(cached);
+    render();
+    setConnectionStatus('connected');
+    console.log('[Cache] Restored dashboard from localStorage');
+  } catch(e) { console.log('[Cache] Restore skipped:', e); }
+})();
+
 loadData();
 setInterval(loadData, CONFIG.REFRESH_INTERVAL);
 setInterval(() => { if (state.data) render(); }, 60 * 1000);
