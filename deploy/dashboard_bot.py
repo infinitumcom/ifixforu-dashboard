@@ -8,10 +8,14 @@ SG 门店 Dashboard Bot — Telegram 长轮询
 from __future__ import annotations
 
 import asyncio
+import atexit
 import json
 import logging
 import os
+import signal
+import sys
 from datetime import date
+from pathlib import Path
 
 import httpx
 
@@ -23,6 +27,10 @@ from classifier import classify_message
 SG_BOT_TOKEN = "8668095541:AAEJw71XFFu_VTociX-Xam1D0xsKHjrIe2Y"
 SG_STORE_CODE = "san_gabriel"
 TELEGRAM_API = f"https://api.telegram.org/bot{SG_BOT_TOKEN}"
+
+# PID 锁文件，防止重复实例
+PID_FILE = Path(__file__).parent / "dashboard_bot.pid"
+MAX_CONSECUTIVE_409 = 10  # 连续 409 超过此数则退出，由 watchdog 重启
 
 logging.basicConfig(
     level=logging.INFO,
@@ -381,13 +389,38 @@ async def handle_message(chat_id: str, msg_id: int, user_id: str, text: str, sen
 
 # ── Telegram 长轮询 ──────────────────────────────────────────
 
+def acquire_pid_lock():
+    """获取 PID 锁文件，防止重复实例。如果已有实例在运行则退出。"""
+    if PID_FILE.exists():
+        try:
+            old_pid = int(PID_FILE.read_text().strip())
+            # 检查进程是否存在
+            os.kill(old_pid, 0)
+            logger.error("另一个实例已在运行 (PID %d)，退出", old_pid)
+            sys.exit(1)
+        except (ProcessLookupError, ValueError):
+            # 进程不存在或 PID 文件损坏，可以清理
+            logger.info("清理旧 PID 文件 (进程已不存在)")
+        except PermissionError:
+            logger.error("另一个实例已在运行 (PID 权限检查失败)，退出")
+            sys.exit(1)
+
+    PID_FILE.write_text(str(os.getpid()))
+    atexit.register(lambda: PID_FILE.unlink(missing_ok=True))
+    # 信号处理：确保退出时清理 PID 文件
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, lambda s, f: sys.exit(0))
+
+
 async def poll_updates() -> None:
     """长轮询监听 Telegram 消息"""
     offset = 0
     consecutive_errors = 0
+    consecutive_409 = 0
 
     init_db()
-    logger.info("SG Dashboard Bot 已启动 (store: %s)", SG_STORE_CODE)
+    acquire_pid_lock()
+    logger.info("SG Dashboard Bot 已启动 (store: %s, PID: %d)", SG_STORE_CODE, os.getpid())
 
     async with httpx.AsyncClient() as client:
         while True:
@@ -397,6 +430,17 @@ async def poll_updates() -> None:
                     params={"offset": offset, "timeout": 30},
                     timeout=40,
                 )
+
+                # ── 409 冲突检测：另一个实例在抢 updates ──
+                if resp.status_code == 409:
+                    consecutive_409 += 1
+                    if consecutive_409 >= MAX_CONSECUTIVE_409:
+                        logger.error("连续 %d 次 409 Conflict，存在重复实例，退出进程让 watchdog 重启", consecutive_409)
+                        sys.exit(1)
+                    logger.warning("getUpdates 409 Conflict (第%d次/%d)", consecutive_409, MAX_CONSECUTIVE_409)
+                    await asyncio.sleep(min(5 * consecutive_409, 30))
+                    continue
+
                 if resp.status_code != 200:
                     logger.warning("getUpdates 返回 %s", resp.status_code)
                     consecutive_errors += 1
@@ -404,6 +448,7 @@ async def poll_updates() -> None:
                     continue
 
                 consecutive_errors = 0
+                consecutive_409 = 0  # 成功后重置 409 计数
                 updates = resp.json().get("result", [])
 
                 for update in updates:

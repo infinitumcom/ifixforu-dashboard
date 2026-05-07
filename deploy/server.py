@@ -161,6 +161,22 @@ async def fetch_payments(merchant_id, start_ms, end_ms, client):
     return all_payments
 
 MAX_ORDER_CENTS = 5_000_000  # 单笔订单上限 $50,000，超过视为异常数据
+_anomaly_alerted = set()  # 已告警的异常订单 ID，防止重复告警
+
+
+def _log_anomalous_orders(orders, store_name):
+    """检测并记录异常订单，每个订单只告警一次。"""
+    for o in orders:
+        total = o.get("total", 0)
+        order_id = o.get("id", "unknown")
+        if abs(total) > MAX_ORDER_CENTS and order_id not in _anomaly_alerted:
+            _anomaly_alerted.add(order_id)
+            logger.warning(
+                "⚠️ 异常订单已过滤 — 门店: %s, 订单ID: %s, 金额: $%s, 员工: %s",
+                store_name, order_id, f"{total / 100:,.2f}",
+                o.get("employee", {}).get("name", "N/A"),
+            )
+
 
 def compute_store_stats(orders, payments):
     # 过滤掉异常金额订单（如 $999,999.99 的测试/录入错误）
@@ -213,7 +229,8 @@ async def fetch_store_data(store, start_ms, end_ms, client):
             fetch_orders(mid, start_ms, end_ms, client),
             fetch_payments(mid, start_ms, end_ms, client),
         )
-        # 过滤异常订单
+        # 检测并过滤异常订单
+        _log_anomalous_orders(orders, name)
         orders = [o for o in orders if abs(o.get("total", 0)) <= MAX_ORDER_CENTS]
         stats = compute_store_stats(orders, payments)
         employee_stats = defaultdict(lambda: {"revenue": 0, "orders": 0})
