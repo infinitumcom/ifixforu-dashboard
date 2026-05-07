@@ -1973,7 +1973,8 @@ const state = {
   data: null,
   lastUpdate: null,
   bottomSections: [],
-  bottomIndex: 0
+  bottomIndex: 0,
+  prevData: null   // 上次 API 数据，用于 diff 渲染
 };
 
 // ============================================================
@@ -2013,48 +2014,136 @@ setInterval(updateClock, 1000);
 // ============================================================
 // DATA LOADING
 // ============================================================
+async function fetchWithTimeout(url, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    return resp;
+  } catch(e) {
+    clearTimeout(timer);
+    throw e;
+  }
+}
+
+async function fetchWithRetry(url, maxRetries, timeoutMs) {
+  let lastError;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const resp = await fetchWithTimeout(url, timeoutMs);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      return resp;
+    } catch(e) {
+      lastError = e;
+      if (attempt < maxRetries) {
+        const delay = Math.pow(2, attempt + 1) * 1000; // 2s, 4s, 8s
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastError;
+}
+
+function mergeApiData(live) {
+  const merged = Object.assign({}, MOCK_DATA);
+  merged.store = live.store;
+  merged.sales = live.sales;
+  merged.revenue_breakdown = live.revenue_breakdown;
+  merged.rankings = live.rankings;
+  merged.month_champion = live.month_champion;
+  if (live.employee_rankings) merged.employee_rankings = live.employee_rankings;
+  if (live.items && live.items.length > 0) merged.items = live.items;
+  if (live.notices && live.notices.length > 0) merged.notices = live.notices;
+  if (live.reviews) merged.reviews = Object.assign({}, merged.reviews || {}, live.reviews);
+
+  const todayStaff = getTodaySchedule(CONFIG.STORE_CODE);
+  merged.shift = {
+    current: getCurrentShiftName(),
+    hours: '10:00 - 19:00',
+    next_shift: '',
+    employees: todayStaff.map(function(name) {
+      return { name: name, role: '员工', initials: name.charAt(0).toUpperCase(), color: getEmpColor(name) };
+    })
+  };
+  return merged;
+}
+
 async function loadData() {
   try {
     setConnectionStatus('loading');
-    const resp = await fetch(CONFIG.API_BASE + '/api/dashboard?store=' + CONFIG.STORE_CODE);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const resp = await fetchWithRetry(
+      CONFIG.API_BASE + '/api/dashboard?store=' + CONFIG.STORE_CODE,
+      3,    // maxRetries
+      8000  // 8 秒超时
+    );
     const live = await resp.json();
+    const merged = mergeApiData(live);
 
-    // Merge live Clover data into MOCK_DATA structure
-    // (keeps items, notices, SOP, combos from MOCK_DATA; replaces revenue/rankings with live)
-    const merged = Object.assign({}, MOCK_DATA);
-    merged.store = live.store;
-    merged.sales = live.sales;
-    merged.revenue_breakdown = live.revenue_breakdown;
-    merged.rankings = live.rankings;
-    merged.month_champion = live.month_champion;
-    if (live.employee_rankings) merged.employee_rankings = live.employee_rankings;
-    if (live.items && live.items.length > 0) merged.items = live.items;
-    if (live.notices && live.notices.length > 0) merged.notices = live.notices;
-    if (live.reviews) merged.reviews = Object.assign({}, merged.reviews || {}, live.reviews);
-
-    // Inject today's schedule into shift data
-    const todayStaff = getTodaySchedule(CONFIG.STORE_CODE);
-    merged.shift = {
-      current: getCurrentShiftName(),
-      hours: '10:00 - 19:00',
-      next_shift: '',
-      employees: todayStaff.map(function(name) {
-        return { name: name, role: '员工', initials: name.charAt(0).toUpperCase(), color: getEmpColor(name) };
-      })
-    };
-
+    // Diff 渲染：只更新变化的部分
+    const prev = state.prevData;
     state.data = merged;
     state.lastUpdate = new Date();
-    render();
+
+    if (!prev) {
+      // 首次加载，全量渲染
+      render();
+    } else {
+      // 对比各模块数据，只渲染变化的部分
+      const d = merged;
+      document.getElementById('storeName').textContent = d.store.display_name_en || d.store.name;
+
+      // Shift — 每次都刷新（员工/班次可能变化）
+      renderShift(d.shift || {});
+
+      // Revenue — 对比营收数字
+      if (!prev.sales || prev.sales.daily_revenue !== d.sales.daily_revenue ||
+          prev.sales.monthly_revenue !== d.sales.monthly_revenue ||
+          prev.sales.daily_orders !== d.sales.daily_orders ||
+          JSON.stringify(prev.revenue_breakdown) !== JSON.stringify(d.revenue_breakdown)) {
+        renderRevenue(d);
+      }
+
+      // Pipeline
+      if (JSON.stringify(prev.pipeline) !== JSON.stringify(d.pipeline)) {
+        renderPipeline(d.pipeline || {});
+      }
+
+      // Notices
+      if (JSON.stringify(prev.notices) !== JSON.stringify(d.notices)) {
+        renderNoticeStrip(d.notices || []);
+      }
+
+      // Board items
+      if (JSON.stringify(prev.items) !== JSON.stringify(d.items)) {
+        renderBoard(d.items || []);
+      }
+
+      // Recommendations — 较少变化
+      if (JSON.stringify(prev.daily_combos) !== JSON.stringify(d.daily_combos) ||
+          JSON.stringify(prev.accessories) !== JSON.stringify(d.accessories)) {
+        renderRecommendations(d);
+      }
+
+      // Reviews
+      if (JSON.stringify(prev.reviews) !== JSON.stringify(d.reviews)) {
+        renderReviewsFixed(d.reviews || {});
+      }
+
+      // Rankings
+      if (JSON.stringify(prev.rankings) !== JSON.stringify(d.rankings)) {
+        renderRankingsFixed(d.rankings || [], d.store.code);
+      }
+
+      VoiceTriggers.evaluate(d);
+    }
+
+    state.prevData = JSON.parse(JSON.stringify(merged));
     setConnectionStatus('connected');
-    // (fixed layout, no rotation)
   } catch(e) {
     console.error('API load failed:', e);
-    // Fallback: use MOCK_DATA if API fails
     if (!state.data) {
       state.data = MOCK_DATA;
-      // Still inject schedule
       const todayStaff = getTodaySchedule(CONFIG.STORE_CODE);
       state.data.shift = {
         current: getCurrentShiftName(),
@@ -2067,8 +2156,8 @@ async function loadData() {
       state.lastUpdate = new Date();
       render();
     }
+    // 保留旧数据在屏幕上，不清空
     setConnectionStatus('error');
-    // (fixed layout, no rotation)
   }
 }
 
@@ -2146,6 +2235,31 @@ function renderShift(shift) {
 }
 
 // ============================================================
+// ANIMATE: 数字滚动动画
+// ============================================================
+function animateNumber(el, from, to, duration, prefix, suffix) {
+  if (from === to) return;
+  prefix = prefix || '';
+  suffix = suffix || '';
+  const start = performance.now();
+  function tick(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    // easeOutCubic
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(from + (to - from) * ease);
+    el.textContent = prefix + formatNumber(current) + suffix;
+    if (progress < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function getNumericValue(el) {
+  if (!el) return 0;
+  return parseInt(el.textContent.replace(/[^0-9-]/g, ''), 10) || 0;
+}
+
+// ============================================================
 // RENDER: Revenue
 // ============================================================
 function renderRevenue(d) {
@@ -2156,13 +2270,27 @@ function renderRevenue(d) {
   const dailyOrd = d.sales.daily_orders || 0;
   const avgOrder = dailyOrd > 0 ? Math.round(dailyRev / dailyOrd) : 0;
 
-  // Daily hero
-  document.getElementById('dailyRevenue').textContent = formatNumber(dailyRev);
-  document.getElementById('dailyOrders').textContent = dailyOrd;
-  document.getElementById('dailyAvg').textContent = formatNumber(avgOrder);
+  // Daily hero — 数字滚动动画
+  const elDaily = document.getElementById('dailyRevenue');
+  const elOrders = document.getElementById('dailyOrders');
+  const elAvg = document.getElementById('dailyAvg');
+  const prevDaily = getNumericValue(elDaily);
+  const prevOrders = getNumericValue(elOrders);
+  const prevAvg = getNumericValue(elAvg);
 
-  // Monthly progress
-  document.getElementById('totalRevenue').textContent = formatNumber(monthly);
+  if (prevDaily !== dailyRev) animateNumber(elDaily, prevDaily, dailyRev, 500, '', '');
+  else elDaily.textContent = formatNumber(dailyRev);
+  if (prevOrders !== dailyOrd) animateNumber(elOrders, prevOrders, dailyOrd, 500, '', '');
+  else elOrders.textContent = dailyOrd;
+  if (prevAvg !== avgOrder) animateNumber(elAvg, prevAvg, avgOrder, 500, '', '');
+  else elAvg.textContent = formatNumber(avgOrder);
+
+  // Monthly progress — 数字滚动动画
+  const elMonthly = document.getElementById('totalRevenue');
+  const prevMonthly = getNumericValue(elMonthly);
+  if (prevMonthly !== monthly) animateNumber(elMonthly, prevMonthly, monthly, 500, '', '');
+  else elMonthly.textContent = formatNumber(monthly);
+
   document.getElementById('totalTarget').textContent = '/ $' + formatNumber(target);
   const totalPct = target > 0 ? Math.min(100, (monthly / target) * 100) : 0;
   document.getElementById('totalBar').style.width = totalPct + '%';
@@ -2179,7 +2307,10 @@ function renderRevenue(d) {
   const dailyTotal = cats.reduce((s, c) => s + c.current, 0);
   cats.forEach(c => {
     const pct = dailyTotal > 0 ? Math.round((c.current / dailyTotal) * 100) : 0;
-    document.getElementById(c.key + 'Amt').textContent = '$' + formatNumber(c.current);
+    const amtEl = document.getElementById(c.key + 'Amt');
+    const prevAmt = getNumericValue(amtEl);
+    if (prevAmt !== c.current) animateNumber(amtEl, prevAmt, c.current, 400, '$', '');
+    else amtEl.textContent = '$' + formatNumber(c.current);
     document.getElementById(c.key + 'Pct').textContent = pct + '%';
   });
 }
