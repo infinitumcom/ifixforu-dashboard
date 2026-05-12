@@ -37,9 +37,9 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler(os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard_bot.log")),
-        logging.StreamHandler(),
     ],
 )
+# 只用 FileHandler，避免 nohup 重定向 stderr 导致日志重复
 logger = logging.getLogger(__name__)
 
 TYPE_LABELS = {
@@ -227,7 +227,7 @@ def make_done_button(item_id: int) -> dict:
 
 
 async def handle_callback(callback_query: dict) -> None:
-    """处理 inline 按钮点击"""
+    """处理 inline 按钮点击（try/except 确保始终应答，避免按钮永久转圈）"""
     cb_id = callback_query.get("id", "")
     data = callback_query.get("data", "")
     msg = callback_query.get("message", {})
@@ -239,36 +239,46 @@ async def handle_callback(callback_query: dict) -> None:
         sender_name += " " + from_user["last_name"]
     sender_name = sender_name.strip() or "Unknown"
 
-    if data.startswith("done:"):
-        item_id = int(data.split(":")[1])
-        if mark_done(item_id, sender_name):
-            await answer_callback(cb_id, f"#{item_id} 已完成!")
-            # 更新原消息，去掉按钮，加上完成标记
-            old_text = msg.get("text", "")
-            await edit_message(chat_id, message_id, old_text + f"\n\n✅ 已完成 (by {sender_name})")
-        else:
-            await answer_callback(cb_id, f"#{item_id} 未找到或已完成")
+    logger.info("处理回调: data=%s from=%s cb_id=%s", data, sender_name, cb_id[:20])
 
-    elif data.startswith("del:"):
-        item_id = int(data.split(":")[1])
-        if delete_item(item_id):
-            await answer_callback(cb_id, f"#{item_id} 已删除!")
-            old_text = msg.get("text", "")
-            await edit_message(chat_id, message_id, old_text + f"\n\n🗑 已删除 (by {sender_name})")
-        else:
-            await answer_callback(cb_id, f"#{item_id} 未找到")
+    try:
+        if data.startswith("done:"):
+            item_id = int(data.split(":")[1])
+            if mark_done(item_id, sender_name):
+                await answer_callback(cb_id, f"#{item_id} 已完成!")
+                old_text = msg.get("text", "")
+                await edit_message(chat_id, message_id, old_text + f"\n\n✅ 已完成 (by {sender_name})")
+                logger.info("回调完成: done #%d by %s", item_id, sender_name)
+            else:
+                await answer_callback(cb_id, f"#{item_id} 未找到或已完成")
 
-    elif data.startswith("deln:"):
-        notice_id = int(data.split(":")[1])
-        if deactivate_notice(notice_id):
-            await answer_callback(cb_id, f"公告 #{notice_id} 已删除!")
-            old_text = msg.get("text", "")
-            await edit_message(chat_id, message_id, old_text + f"\n\n🗑 公告已删除 (by {sender_name})")
-        else:
-            await answer_callback(cb_id, f"公告 #{notice_id} 未找到")
+        elif data.startswith("del:"):
+            item_id = int(data.split(":")[1])
+            if delete_item(item_id):
+                await answer_callback(cb_id, f"#{item_id} 已删除!")
+                old_text = msg.get("text", "")
+                await edit_message(chat_id, message_id, old_text + f"\n\n🗑 已删除 (by {sender_name})")
+                logger.info("回调完成: delete #%d by %s", item_id, sender_name)
+            else:
+                await answer_callback(cb_id, f"#{item_id} 未找到")
 
-    else:
-        await answer_callback(cb_id)
+        elif data.startswith("deln:"):
+            notice_id = int(data.split(":")[1])
+            if deactivate_notice(notice_id):
+                await answer_callback(cb_id, f"公告 #{notice_id} 已删除!")
+                old_text = msg.get("text", "")
+                await edit_message(chat_id, message_id, old_text + f"\n\n🗑 公告已删除 (by {sender_name})")
+                logger.info("回调完成: delete notice #%d by %s", notice_id, sender_name)
+            else:
+                await answer_callback(cb_id, f"公告 #{notice_id} 未找到")
+
+        else:
+            await answer_callback(cb_id)
+
+    except Exception as e:
+        logger.error("handle_callback 异常: %s (data=%s)", e, data)
+        # 无论如何都应答 callback，避免按钮永远转圈
+        await answer_callback(cb_id, "操作失败，请重试")
 
 
 # ── 自然语言消息处理 ─────────────────────────────────────────
@@ -422,68 +432,75 @@ async def poll_updates() -> None:
     acquire_pid_lock()
     logger.info("SG Dashboard Bot 已启动 (store: %s, PID: %d)", SG_STORE_CODE, os.getpid())
 
-    async with httpx.AsyncClient() as client:
-        while True:
-            try:
+    while True:
+        try:
+            # 每次请求创建新 client+连接，彻底杜绝连接残留导致 Telegram 409
+            async with httpx.AsyncClient() as client:
                 resp = await client.get(
                     f"{TELEGRAM_API}/getUpdates",
                     params={"offset": offset, "timeout": 30},
                     timeout=40,
                 )
 
-                # ── 409 冲突检测：另一个实例在抢 updates ──
-                if resp.status_code == 409:
-                    consecutive_409 += 1
-                    if consecutive_409 >= MAX_CONSECUTIVE_409:
-                        logger.error("连续 %d 次 409 Conflict，存在重复实例，退出进程让 watchdog 重启", consecutive_409)
-                        sys.exit(1)
-                    logger.warning("getUpdates 409 Conflict (第%d次/%d)", consecutive_409, MAX_CONSECUTIVE_409)
-                    await asyncio.sleep(min(5 * consecutive_409, 30))
-                    continue
+            # ── 409 冲突检测：另一个实例在抢 updates ──
+            if resp.status_code == 409:
+                consecutive_409 += 1
+                if consecutive_409 >= MAX_CONSECUTIVE_409:
+                    logger.error("连续 %d 次 409 Conflict，存在重复实例，退出进程让 watchdog 重启", consecutive_409)
+                    sys.exit(1)
+                logger.warning("getUpdates 409 Conflict (第%d次/%d)", consecutive_409, MAX_CONSECUTIVE_409)
+                await asyncio.sleep(min(5 * consecutive_409, 30))
+                continue
 
-                if resp.status_code != 200:
-                    logger.warning("getUpdates 返回 %s", resp.status_code)
-                    consecutive_errors += 1
-                    await asyncio.sleep(min(5 * consecutive_errors, 60))
-                    continue
-
-                consecutive_errors = 0
-                consecutive_409 = 0  # 成功后重置 409 计数
-                updates = resp.json().get("result", [])
-
-                for update in updates:
-                    offset = update["update_id"] + 1
-
-                    # 处理 inline 按钮回调
-                    if "callback_query" in update:
-                        asyncio.create_task(handle_callback(update["callback_query"]))
-                        continue
-
-                    msg = update.get("message", {})
-                    chat = msg.get("chat", {})
-                    chat_id = str(chat.get("id", ""))
-                    user_id = str(msg.get("from", {}).get("id", ""))
-                    text = msg.get("text", "").strip()
-                    msg_id = msg.get("message_id")
-
-                    # 获取发送者名字
-                    from_user = msg.get("from", {})
-                    sender_name = from_user.get("first_name", "")
-                    if from_user.get("last_name"):
-                        sender_name += " " + from_user["last_name"]
-                    sender_name = sender_name.strip() or "Unknown"
-
-                    if not chat_id or not text:
-                        continue
-
-                    logger.info("收到消息: chat=%s user=%s sender=%s text=%s", chat_id, user_id, sender_name, text[:80])
-                    asyncio.create_task(handle_message(chat_id, msg_id, user_id, text, sender_name))
-
-            except Exception as e:
+            if resp.status_code != 200:
+                logger.warning("getUpdates 返回 %s", resp.status_code)
                 consecutive_errors += 1
-                wait = min(5 * consecutive_errors, 60)
-                logger.error("轮询异常: %s (连续第%d次，等待%ds)", e, consecutive_errors, wait)
-                await asyncio.sleep(wait)
+                await asyncio.sleep(min(5 * consecutive_errors, 60))
+                continue
+
+            consecutive_errors = 0
+            consecutive_409 = 0  # 成功后重置 409 计数
+            updates = resp.json().get("result", [])
+
+            for update in updates:
+                offset = update["update_id"] + 1
+
+                # 处理 inline 按钮回调
+                if "callback_query" in update:
+                    cb_data = update["callback_query"].get("data", "")
+                    cb_from = update["callback_query"].get("from", {}).get("first_name", "?")
+                    logger.info("收到回调: data=%s from=%s update_id=%d", cb_data, cb_from, update["update_id"])
+                    asyncio.create_task(handle_callback(update["callback_query"]))
+                    continue
+
+                msg = update.get("message", {})
+                chat = msg.get("chat", {})
+                chat_id = str(chat.get("id", ""))
+                user_id = str(msg.get("from", {}).get("id", ""))
+                text = msg.get("text", "").strip()
+                msg_id = msg.get("message_id")
+
+                # 获取发送者名字
+                from_user = msg.get("from", {})
+                sender_name = from_user.get("first_name", "")
+                if from_user.get("last_name"):
+                    sender_name += " " + from_user["last_name"]
+                sender_name = sender_name.strip() or "Unknown"
+
+                if not chat_id or not text:
+                    continue
+
+                logger.info("收到消息: chat=%s user=%s sender=%s text=%s", chat_id, user_id, sender_name, text[:80])
+                asyncio.create_task(handle_message(chat_id, msg_id, user_id, text, sender_name))
+
+            # 短暂延迟防止请求重叠
+            await asyncio.sleep(0.5)
+
+        except Exception as e:
+            consecutive_errors += 1
+            wait = min(5 * consecutive_errors, 60)
+            logger.error("轮询异常: %s (连续第%d次，等待%ds)", e, consecutive_errors, wait)
+            await asyncio.sleep(wait)
 
 
 if __name__ == "__main__":

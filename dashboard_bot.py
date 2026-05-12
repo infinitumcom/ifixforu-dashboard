@@ -8,14 +8,18 @@ SG 门店 Dashboard Bot — Telegram 长轮询
 from __future__ import annotations
 
 import asyncio
+import atexit
 import json
 import logging
 import os
+import signal
+import sys
 from datetime import date
+from pathlib import Path
 
 import httpx
 
-from db import add_item, add_notice, get_today_items, get_active_notices, mark_done, delete_item, get_item, init_db, get_wechat_total
+from db import add_item, add_notice, get_today_items, get_active_notices, mark_done, delete_item, get_item, init_db, get_wechat_total, deactivate_notice
 from classifier import classify_message
 
 # ── 配置 ─────────────────────────────────────────────────────
@@ -23,6 +27,10 @@ from classifier import classify_message
 SG_BOT_TOKEN = "8668095541:AAEJw71XFFu_VTociX-Xam1D0xsKHjrIe2Y"
 SG_STORE_CODE = "san_gabriel"
 TELEGRAM_API = f"https://api.telegram.org/bot{SG_BOT_TOKEN}"
+
+# PID 锁文件，防止重复实例
+PID_FILE = Path(__file__).parent / "dashboard_bot.pid"
+MAX_CONSECUTIVE_409 = 10  # 连续 409 超过此数则退出，由 watchdog 重启
 
 logging.basicConfig(
     level=logging.INFO,
@@ -219,7 +227,7 @@ def make_done_button(item_id: int) -> dict:
 
 
 async def handle_callback(callback_query: dict) -> None:
-    """处理 inline 按钮点击"""
+    """处理 inline 按钮点击（try/except 确保始终应答，避免按钮永久转圈）"""
     cb_id = callback_query.get("id", "")
     data = callback_query.get("data", "")
     msg = callback_query.get("message", {})
@@ -231,27 +239,46 @@ async def handle_callback(callback_query: dict) -> None:
         sender_name += " " + from_user["last_name"]
     sender_name = sender_name.strip() or "Unknown"
 
-    if data.startswith("done:"):
-        item_id = int(data.split(":")[1])
-        if mark_done(item_id, sender_name):
-            await answer_callback(cb_id, f"#{item_id} 已完成!")
-            # 更新原消息，去掉按钮，加上完成标记
-            old_text = msg.get("text", "")
-            await edit_message(chat_id, message_id, old_text + f"\n\n✅ 已完成 (by {sender_name})")
-        else:
-            await answer_callback(cb_id, f"#{item_id} 未找到或已完成")
+    logger.info("处理回调: data=%s from=%s cb_id=%s", data, sender_name, cb_id[:20])
 
-    elif data.startswith("del:"):
-        item_id = int(data.split(":")[1])
-        if delete_item(item_id):
-            await answer_callback(cb_id, f"#{item_id} 已删除!")
-            old_text = msg.get("text", "")
-            await edit_message(chat_id, message_id, old_text + f"\n\n🗑 已删除 (by {sender_name})")
-        else:
-            await answer_callback(cb_id, f"#{item_id} 未找到")
+    try:
+        if data.startswith("done:"):
+            item_id = int(data.split(":")[1])
+            if mark_done(item_id, sender_name):
+                await answer_callback(cb_id, f"#{item_id} 已完成!")
+                old_text = msg.get("text", "")
+                await edit_message(chat_id, message_id, old_text + f"\n\n✅ 已完成 (by {sender_name})")
+                logger.info("回调完成: done #%d by %s", item_id, sender_name)
+            else:
+                await answer_callback(cb_id, f"#{item_id} 未找到或已完成")
 
-    else:
-        await answer_callback(cb_id)
+        elif data.startswith("del:"):
+            item_id = int(data.split(":")[1])
+            if delete_item(item_id):
+                await answer_callback(cb_id, f"#{item_id} 已删除!")
+                old_text = msg.get("text", "")
+                await edit_message(chat_id, message_id, old_text + f"\n\n🗑 已删除 (by {sender_name})")
+                logger.info("回调完成: delete #%d by %s", item_id, sender_name)
+            else:
+                await answer_callback(cb_id, f"#{item_id} 未找到")
+
+        elif data.startswith("deln:"):
+            notice_id = int(data.split(":")[1])
+            if deactivate_notice(notice_id):
+                await answer_callback(cb_id, f"公告 #{notice_id} 已删除!")
+                old_text = msg.get("text", "")
+                await edit_message(chat_id, message_id, old_text + f"\n\n🗑 公告已删除 (by {sender_name})")
+                logger.info("回调完成: delete notice #%d by %s", notice_id, sender_name)
+            else:
+                await answer_callback(cb_id, f"公告 #{notice_id} 未找到")
+
+        else:
+            await answer_callback(cb_id)
+
+    except Exception as e:
+        logger.error("handle_callback 异常: %s (data=%s)", e, data)
+        # 无论如何都应答 callback，避免按钮永远转圈
+        await answer_callback(cb_id, "操作失败，请重试")
 
 
 # ── 自然语言消息处理 ─────────────────────────────────────────
@@ -294,6 +321,7 @@ async def _process_one_item(chat_id: str, msg_id: int, result: dict, sender_name
             chat_id,
             f"✅ 公告已发布 #{notice_id}: {result.get('content', '')}",
             reply_to=msg_id,
+            reply_markup={"inline_keyboard": [[{"text": "🗑 删除公告", "callback_data": f"deln:{notice_id}"}]]},
         )
     elif msg_type == "wechat_report":
         meta = result.get("meta", {})
@@ -371,13 +399,38 @@ async def handle_message(chat_id: str, msg_id: int, user_id: str, text: str, sen
 
 # ── Telegram 长轮询 ──────────────────────────────────────────
 
+def acquire_pid_lock():
+    """获取 PID 锁文件，防止重复实例。如果已有实例在运行则退出。"""
+    if PID_FILE.exists():
+        try:
+            old_pid = int(PID_FILE.read_text().strip())
+            # 检查进程是否存在
+            os.kill(old_pid, 0)
+            logger.error("另一个实例已在运行 (PID %d)，退出", old_pid)
+            sys.exit(1)
+        except (ProcessLookupError, ValueError):
+            # 进程不存在或 PID 文件损坏，可以清理
+            logger.info("清理旧 PID 文件 (进程已不存在)")
+        except PermissionError:
+            logger.error("另一个实例已在运行 (PID 权限检查失败)，退出")
+            sys.exit(1)
+
+    PID_FILE.write_text(str(os.getpid()))
+    atexit.register(lambda: PID_FILE.unlink(missing_ok=True))
+    # 信号处理：确保退出时清理 PID 文件
+    for sig in (signal.SIGTERM, signal.SIGINT):
+        signal.signal(sig, lambda s, f: sys.exit(0))
+
+
 async def poll_updates() -> None:
     """长轮询监听 Telegram 消息"""
     offset = 0
     consecutive_errors = 0
+    consecutive_409 = 0
 
     init_db()
-    logger.info("SG Dashboard Bot 已启动 (store: %s)", SG_STORE_CODE)
+    acquire_pid_lock()
+    logger.info("SG Dashboard Bot 已启动 (store: %s, PID: %d)", SG_STORE_CODE, os.getpid())
 
     while True:
         try:
@@ -388,13 +441,25 @@ async def poll_updates() -> None:
                     params={"offset": offset, "timeout": 30},
                     timeout=40,
                 )
+
+            # ── 409 冲突检测：另一个实例在抢 updates ──
+            if resp.status_code == 409:
+                consecutive_409 += 1
+                if consecutive_409 >= MAX_CONSECUTIVE_409:
+                    logger.error("连续 %d 次 409 Conflict，存在重复实例，退出进程让 watchdog 重启", consecutive_409)
+                    sys.exit(1)
+                logger.warning("getUpdates 409 Conflict (第%d次/%d)", consecutive_409, MAX_CONSECUTIVE_409)
+                await asyncio.sleep(min(5 * consecutive_409, 30))
+                continue
+
             if resp.status_code != 200:
-                logger.warning("getUpdates %d: %s", resp.status_code, resp.text[:120])
+                logger.warning("getUpdates 返回 %s", resp.status_code)
                 consecutive_errors += 1
                 await asyncio.sleep(min(5 * consecutive_errors, 60))
                 continue
 
             consecutive_errors = 0
+            consecutive_409 = 0  # 成功后重置 409 计数
             updates = resp.json().get("result", [])
 
             for update in updates:
