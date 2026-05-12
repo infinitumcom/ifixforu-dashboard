@@ -144,19 +144,19 @@ public class MainActivity extends Activity {
             "  css.id = 'ifixforu-apk-overrides';" +
             "  css.innerHTML = [" +
             "    '*, *::before, *::after { cursor: none !important; }'," +
-            "    'body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; height: 100vh !important; transform: scale(0.97)" + ("las_vegas".equals(BuildConfig.STORE_CODE) ? " rotate(180deg)" : "") + " !important; transform-origin: center center !important; }'," +
-            "    '#app { animation: none !important; }'," +
+            "    'body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; width: 100vw !important; height: 100vh !important; transform:" + ("las_vegas".equals(BuildConfig.STORE_CODE) ? " rotate(180deg)" : "") + " !important; transform-origin: center center !important; }'," +
+            "    '#app { animation: none !important; padding: 6px 10px !important; gap: 4px !important; }'," +
             "    '#app {'," +
             "    '  grid-template-rows:'," +
             "    '    80px'," +
-            "    '    54px'," +
-            "    '    46px'," +
+            "    '    50px'," +
+            "    '    42px'," +
             "    '    240px'," +
             "    '    1fr'," +
             "    '    115px'," +
             "    '    108px'," +
             "    '    270px'," +
-            "    '    18px'," +
+            "    '    16px'," +
             "    '  !important;'," +
             "    '}'," +
             "    '.header { padding: 8px 18px !important; gap: 10px !important; }'," +
@@ -327,6 +327,7 @@ public class MainActivity extends Activity {
             "    if (qcLabel) qcLabel.textContent = '\\u4e3b\\u677f\\u7ef4\\u4fee\\u5f85\\u53d6';" +
 
             "    window.dispatchEvent(new Event('resize'));" +
+            "    if (typeof state !== 'undefined') state.prevData = null;" +
             "    if (typeof loadData === 'function') loadData();" +
             "  }, 500);" +
             "})();";
