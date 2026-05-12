@@ -29,9 +29,9 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
         logging.FileHandler(os.path.join(os.path.dirname(os.path.abspath(__file__)), "dashboard_bot.log")),
-        logging.StreamHandler(),
     ],
 )
+# 只用 FileHandler，避免 nohup 重定向 stderr 导致日志重复
 logger = logging.getLogger(__name__)
 
 TYPE_LABELS = {
@@ -379,64 +379,63 @@ async def poll_updates() -> None:
     init_db()
     logger.info("SG Dashboard Bot 已启动 (store: %s)", SG_STORE_CODE)
 
-    # 禁用 keep-alive 连接池，防止残留连接导致 409 Conflict
-    limits = httpx.Limits(max_connections=1, max_keepalive_connections=0)
-    async with httpx.AsyncClient(limits=limits) as client:
-        while True:
-            try:
+    while True:
+        try:
+            # 每次请求创建新 client+连接，彻底杜绝连接残留导致 Telegram 409
+            async with httpx.AsyncClient() as client:
                 resp = await client.get(
                     f"{TELEGRAM_API}/getUpdates",
                     params={"offset": offset, "timeout": 30},
                     timeout=40,
                 )
-                if resp.status_code != 200:
-                    logger.warning("getUpdates 返回 %s (status=%d)", resp.text[:100], resp.status_code)
-                    consecutive_errors += 1
-                    await asyncio.sleep(min(5 * consecutive_errors, 60))
+            if resp.status_code != 200:
+                logger.warning("getUpdates %d: %s", resp.status_code, resp.text[:120])
+                consecutive_errors += 1
+                await asyncio.sleep(min(5 * consecutive_errors, 60))
+                continue
+
+            consecutive_errors = 0
+            updates = resp.json().get("result", [])
+
+            for update in updates:
+                offset = update["update_id"] + 1
+
+                # 处理 inline 按钮回调
+                if "callback_query" in update:
+                    cb_data = update["callback_query"].get("data", "")
+                    cb_from = update["callback_query"].get("from", {}).get("first_name", "?")
+                    logger.info("收到回调: data=%s from=%s update_id=%d", cb_data, cb_from, update["update_id"])
+                    asyncio.create_task(handle_callback(update["callback_query"]))
                     continue
 
-                consecutive_errors = 0
-                updates = resp.json().get("result", [])
+                msg = update.get("message", {})
+                chat = msg.get("chat", {})
+                chat_id = str(chat.get("id", ""))
+                user_id = str(msg.get("from", {}).get("id", ""))
+                text = msg.get("text", "").strip()
+                msg_id = msg.get("message_id")
 
-                for update in updates:
-                    offset = update["update_id"] + 1
+                # 获取发送者名字
+                from_user = msg.get("from", {})
+                sender_name = from_user.get("first_name", "")
+                if from_user.get("last_name"):
+                    sender_name += " " + from_user["last_name"]
+                sender_name = sender_name.strip() or "Unknown"
 
-                    # 处理 inline 按钮回调
-                    if "callback_query" in update:
-                        cb_data = update["callback_query"].get("data", "")
-                        cb_from = update["callback_query"].get("from", {}).get("first_name", "?")
-                        logger.info("收到回调: data=%s from=%s update_id=%d", cb_data, cb_from, update["update_id"])
-                        asyncio.create_task(handle_callback(update["callback_query"]))
-                        continue
+                if not chat_id or not text:
+                    continue
 
-                    msg = update.get("message", {})
-                    chat = msg.get("chat", {})
-                    chat_id = str(chat.get("id", ""))
-                    user_id = str(msg.get("from", {}).get("id", ""))
-                    text = msg.get("text", "").strip()
-                    msg_id = msg.get("message_id")
+                logger.info("收到消息: chat=%s user=%s sender=%s text=%s", chat_id, user_id, sender_name, text[:80])
+                asyncio.create_task(handle_message(chat_id, msg_id, user_id, text, sender_name))
 
-                    # 获取发送者名字
-                    from_user = msg.get("from", {})
-                    sender_name = from_user.get("first_name", "")
-                    if from_user.get("last_name"):
-                        sender_name += " " + from_user["last_name"]
-                    sender_name = sender_name.strip() or "Unknown"
+            # 短暂延迟防止请求重叠
+            await asyncio.sleep(0.5)
 
-                    if not chat_id or not text:
-                        continue
-
-                    logger.info("收到消息: chat=%s user=%s sender=%s text=%s", chat_id, user_id, sender_name, text[:80])
-                    asyncio.create_task(handle_message(chat_id, msg_id, user_id, text, sender_name))
-
-                # 短暂延迟防止请求重叠
-                await asyncio.sleep(0.5)
-
-            except Exception as e:
-                consecutive_errors += 1
-                wait = min(5 * consecutive_errors, 60)
-                logger.error("轮询异常: %s (连续第%d次，等待%ds)", e, consecutive_errors, wait)
-                await asyncio.sleep(wait)
+        except Exception as e:
+            consecutive_errors += 1
+            wait = min(5 * consecutive_errors, 60)
+            logger.error("轮询异常: %s (连续第%d次，等待%ds)", e, consecutive_errors, wait)
+            await asyncio.sleep(wait)
 
 
 if __name__ == "__main__":
