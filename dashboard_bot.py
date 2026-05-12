@@ -15,7 +15,7 @@ from datetime import date
 
 import httpx
 
-from db import add_item, add_notice, get_today_items, get_active_notices, mark_done, delete_item, get_item, init_db
+from db import add_item, add_notice, get_today_items, get_active_notices, mark_done, delete_item, get_item, init_db, get_wechat_total
 from classifier import classify_message
 
 # ── 配置 ─────────────────────────────────────────────────────
@@ -41,6 +41,7 @@ TYPE_LABELS = {
     "repair_pending": "🔧 维修等待",
     "todo": "✏️ 待办",
     "notice": "📢 公告",
+    "wechat_report": "💚 微信报备",
 }
 
 # ── Telegram 消息发送 ────────────────────────────────────────
@@ -158,6 +159,36 @@ async def cmd_notices(chat_id: str) -> None:
     await send_message(chat_id, "\n".join(lines))
 
 
+async def cmd_wechat(chat_id: str, args: str, msg_id: int, sender_name: str) -> None:
+    """快速报备微信好友新增"""
+    try:
+        amount = int(args.strip())
+    except (ValueError, TypeError):
+        await send_message(chat_id, "用法: /wechat <数量>\n例: /wechat 5")
+        return
+    if amount <= 0:
+        await send_message(chat_id, "❌ 数量必须大于0")
+        return
+
+    item = {
+        "type": "wechat_report",
+        "content": f"今日新增{amount}人",
+        "display_emoji": "💚",
+        "due_date": date.today().isoformat(),
+        "creator_name": sender_name,
+        "telegram_msg_id": msg_id,
+        "telegram_chat_id": str(chat_id),
+        "meta": {"amount": amount},
+    }
+    add_item(SG_STORE_CODE, item)
+    wechat = get_wechat_total(SG_STORE_CODE)
+    await send_message(
+        chat_id,
+        f"💚 微信好友已记录: +{amount}人 (今日+{wechat['today_added']}，累计{wechat['total']:,})",
+        reply_to=msg_id,
+    )
+
+
 async def cmd_help(chat_id: str) -> None:
     text = (
         "📖 SG Dashboard Bot 命令\n"
@@ -169,6 +200,7 @@ async def cmd_help(chat_id: str) -> None:
         "/notices — 查看公告\n"
         "/done <ID> — 标记完成\n"
         "/delete <ID> — 删除看板项\n"
+        "/wechat <数量> — 快速报备微信好友新增\n"
         "/help — 显示本帮助"
     )
     await send_message(chat_id, text)
@@ -263,6 +295,31 @@ async def _process_one_item(chat_id: str, msg_id: int, result: dict, sender_name
             f"✅ 公告已发布 #{notice_id}: {result.get('content', '')}",
             reply_to=msg_id,
         )
+    elif msg_type == "wechat_report":
+        meta = result.get("meta", {})
+        raw_amount = int(meta.get("amount") or 0)
+        source_mode = meta.get("source", "increment")
+
+        if source_mode == "total":
+            # 用户报告的是总数，计算增量
+            current = get_wechat_total(SG_STORE_CODE)
+            amount = max(0, raw_amount - current["total"])
+            if amount == 0:
+                await send_message(chat_id, f"💚 当前微信好友已是 {current['total']:,}，无新增", reply_to=msg_id)
+                return
+            # 修正 meta.amount 为实际增量
+            result["meta"]["amount"] = amount
+            result["content"] = f"今日新增{amount}人"
+        else:
+            amount = raw_amount
+
+        item_id = add_item(SG_STORE_CODE, result)
+        wechat = get_wechat_total(SG_STORE_CODE)
+        await send_message(
+            chat_id,
+            f"💚 微信好友已记录: +{amount}人 (今日+{wechat['today_added']}，累计{wechat['total']:,})",
+            reply_to=msg_id,
+        )
     else:
         item_id = add_item(SG_STORE_CODE, result)
         urgent_tag = " 🔴急" if result.get("urgent") else ""
@@ -302,6 +359,8 @@ async def handle_message(chat_id: str, msg_id: int, user_id: str, text: str, sen
             await cmd_list(chat_id)
         elif cmd == "/notices":
             await cmd_notices(chat_id)
+        elif cmd == "/wechat":
+            await cmd_wechat(chat_id, args, msg_id, sender_name)
         elif cmd in ("/help", "/start"):
             await cmd_help(chat_id)
         # 其他命令忽略
@@ -320,7 +379,9 @@ async def poll_updates() -> None:
     init_db()
     logger.info("SG Dashboard Bot 已启动 (store: %s)", SG_STORE_CODE)
 
-    async with httpx.AsyncClient() as client:
+    # 禁用 keep-alive 连接池，防止残留连接导致 409 Conflict
+    limits = httpx.Limits(max_connections=1, max_keepalive_connections=0)
+    async with httpx.AsyncClient(limits=limits) as client:
         while True:
             try:
                 resp = await client.get(
@@ -329,7 +390,7 @@ async def poll_updates() -> None:
                     timeout=40,
                 )
                 if resp.status_code != 200:
-                    logger.warning("getUpdates 返回 %s", resp.status_code)
+                    logger.warning("getUpdates 返回 %s (status=%d)", resp.text[:100], resp.status_code)
                     consecutive_errors += 1
                     await asyncio.sleep(min(5 * consecutive_errors, 60))
                     continue
@@ -342,6 +403,9 @@ async def poll_updates() -> None:
 
                     # 处理 inline 按钮回调
                     if "callback_query" in update:
+                        cb_data = update["callback_query"].get("data", "")
+                        cb_from = update["callback_query"].get("from", {}).get("first_name", "?")
+                        logger.info("收到回调: data=%s from=%s update_id=%d", cb_data, cb_from, update["update_id"])
                         asyncio.create_task(handle_callback(update["callback_query"]))
                         continue
 
@@ -364,6 +428,9 @@ async def poll_updates() -> None:
 
                     logger.info("收到消息: chat=%s user=%s sender=%s text=%s", chat_id, user_id, sender_name, text[:80])
                     asyncio.create_task(handle_message(chat_id, msg_id, user_id, text, sender_name))
+
+                # 短暂延迟防止请求重叠
+                await asyncio.sleep(0.5)
 
             except Exception as e:
                 consecutive_errors += 1
