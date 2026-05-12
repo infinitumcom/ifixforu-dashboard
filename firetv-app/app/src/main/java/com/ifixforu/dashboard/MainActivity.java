@@ -208,7 +208,7 @@ public class MainActivity extends Activity {
     private void injectHelperScripts(WebView view) {
         String script =
             "(function() {" +
-            "  if (typeof CONFIG !== 'undefined') { CONFIG.API_BASE = 'http://64.62.248.68:8889'; CONFIG.STORE_CODE = 'san_gabriel'; CONFIG.REFRESH_INTERVAL = 5000; }" +
+            "  if (typeof CONFIG !== 'undefined') { CONFIG.API_BASE = 'http://64.62.248.68:8889'; CONFIG.STORE_CODE = '" + BuildConfig.STORE_CODE + "'; CONFIG.REFRESH_INTERVAL = 5000; }" +
             "  if (typeof MOCK_DATA !== 'undefined') { MOCK_DATA.items = []; MOCK_DATA.notices = []; }" +
 
             // 2. CSS overrides

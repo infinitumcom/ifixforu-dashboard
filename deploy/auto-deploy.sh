@@ -69,7 +69,7 @@ git reset --hard origin/$BRANCH
 # 比对并复制 deploy/ 下的文件
 CHANGED=0
 
-for f in server.py db.py classifier.py dashboard_bot.py dashboard_bot_ar1.py watchdog.sh auto-deploy.sh; do
+for f in server.py db.py classifier.py dashboard_bot.py dashboard_bot_ar1.py dashboard_bot_lv.py watchdog.sh auto-deploy.sh; do
     SRC="$REPO_DIR/deploy/$f"
     DST="$DEPLOY_DIR/$f"
     if [ -f "$SRC" ]; then
@@ -122,6 +122,12 @@ if [ "$CHANGED" -eq 1 ]; then
     rm -f "$DEPLOY_DIR/dashboard_bot_ar1.pid"
     cd $DEPLOY_DIR && nohup $VENV dashboard_bot_ar1.py >> /dev/null 2>&1 &
     echo "$LOG_PREFIX AR1 bot 已重启 (PID: $!)"
+
+    # 重启 LV bot
+    safe_stop 'python.*dashboard_bot_lv\.py$' "dashboard_bot_lv.pid"
+    rm -f "$DEPLOY_DIR/dashboard_bot_lv.pid"
+    cd $DEPLOY_DIR && nohup $VENV dashboard_bot_lv.py >> /dev/null 2>&1 &
+    echo "$LOG_PREFIX LV bot 已重启 (PID: $!)"
 
     echo "$LOG_PREFIX 部署完成!"
 else

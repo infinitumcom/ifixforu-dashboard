@@ -88,6 +88,32 @@ check_ar1_bot() {
     fi
 }
 
+# 4. 检查 LV bot
+check_lv_bot() {
+    PID_FILE="$DIR/dashboard_bot_lv.pid"
+    RUNNING=false
+
+    if [ -f "$PID_FILE" ]; then
+        PID=$(cat "$PID_FILE" 2>/dev/null)
+        if [ -n "$PID" ] && kill -0 "$PID" 2>/dev/null; then
+            RUNNING=true
+        fi
+    fi
+
+    if [ "$RUNNING" = false ] && pgrep -f "python.*dashboard_bot_lv\.py$" > /dev/null 2>&1; then
+        RUNNING=true
+    fi
+
+    if [ "$RUNNING" = false ]; then
+        echo "$LOG_PREFIX LV bot 未运行，正在启动..."
+        rm -f "$PID_FILE"
+        cd $DIR && nohup $VENV dashboard_bot_lv.py >> /dev/null 2>&1 &
+        sleep 2
+        echo "$LOG_PREFIX LV bot 已启动 (PID: $(cat "$PID_FILE" 2>/dev/null || pgrep -f 'python.*dashboard_bot_lv\.py$'))"
+    fi
+}
+
 check_server
 check_sg_bot
 check_ar1_bot
+check_lv_bot

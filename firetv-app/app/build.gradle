@@ -8,8 +8,30 @@ android {
         applicationId "com.ifixforu.dashboard"
         minSdk 22
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
+        // 默认门店代码，被 flavor 覆盖
+        buildConfigField "String", "STORE_CODE", "\"san_gabriel\""
+    }
+
+    flavorDimensions "store"
+    productFlavors {
+        sg {
+            dimension "store"
+            buildConfigField "String", "STORE_CODE", "\"san_gabriel\""
+        }
+        nv {
+            dimension "store"
+            buildConfigField "String", "STORE_CODE", "\"las_vegas\""
+        }
+        ar1 {
+            dimension "store"
+            buildConfigField "String", "STORE_CODE", "\"arcadia_1\""
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     buildTypes {
