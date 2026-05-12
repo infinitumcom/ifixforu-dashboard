@@ -115,7 +115,7 @@ public class MainActivity extends Activity {
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
-        settings.setCacheMode(WebSettings.LOAD_CACHE_ELSE_NETWORK);
+        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setUseWideViewPort(false);
         settings.setLoadWithOverviewMode(false);
         settings.setMediaPlaybackRequiresUserGesture(false);
