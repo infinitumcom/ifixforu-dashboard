@@ -368,6 +368,7 @@ def notice_to_api_format(row) -> dict:
 WECHAT_BASELINES = {
     "san_gabriel": 6148,
     "arcadia_1": 94,
+    "las_vegas": 2847,
 }
 
 
