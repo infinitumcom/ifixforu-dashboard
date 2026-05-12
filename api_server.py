@@ -19,7 +19,7 @@ from threading import Thread, Lock
 from db import (get_today_items, get_active_notices, init_db,
                 get_items_history, get_all_notices_admin, get_admin_stats,
                 mark_done, delete_item, deactivate_notice,
-                add_item, add_notice)
+                add_item, add_notice, get_wechat_total)
 
 # 添加 CloverWatch 项目到路径
 sys.path.insert(0, "/Users/Apple/PhpstormProjects/CloverWatch")
@@ -268,6 +268,14 @@ def get_data_sync(store_code: str = "san_gabriel") -> dict:
     except Exception as e:
         logger.error("获取 notices 失败: %s", e)
         data["notices"] = []
+
+    # 微信好友实时数据
+    try:
+        data.setdefault("reviews", {})
+        wechat_data = get_wechat_total(store_code)
+        data["reviews"]["wechat"] = {"total": wechat_data["total"], "today_added": wechat_data["today_added"]}
+    except Exception as e:
+        logger.error("获取微信数据失败: %s", e)
 
     return data
 

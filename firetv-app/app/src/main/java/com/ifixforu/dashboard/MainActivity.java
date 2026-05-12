@@ -22,7 +22,7 @@ import android.widget.TextView;
 
 public class MainActivity extends Activity {
 
-    private static final String DASHBOARD_URL = "http://64.62.248.68:8889";
+    private static final String DASHBOARD_URL = "http://207.174.131.61:8889";
     private static final long RELOAD_INTERVAL_MS = 5 * 60 * 1000;
 
     private FrameLayout root;
@@ -208,7 +208,7 @@ public class MainActivity extends Activity {
     private void injectHelperScripts(WebView view) {
         String script =
             "(function() {" +
-            "  if (typeof CONFIG !== 'undefined') { CONFIG.API_BASE = 'http://64.62.248.68:8889'; CONFIG.STORE_CODE = '" + BuildConfig.STORE_CODE + "'; CONFIG.REFRESH_INTERVAL = 5000; }" +
+            "  if (typeof CONFIG !== 'undefined') { CONFIG.API_BASE = 'http://207.174.131.61:8889'; CONFIG.STORE_CODE = '" + BuildConfig.STORE_CODE + "'; CONFIG.REFRESH_INTERVAL = 5000; }" +
             "  if (typeof MOCK_DATA !== 'undefined') { MOCK_DATA.items = []; MOCK_DATA.notices = []; }" +
 
             // 2. CSS overrides
