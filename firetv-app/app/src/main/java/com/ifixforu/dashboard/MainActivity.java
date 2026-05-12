@@ -21,7 +21,7 @@ import android.widget.TextView;
 
 public class MainActivity extends Activity {
 
-    private static final String DASHBOARD_URL = "http://207.174.131.61:8889";
+    private static final String DASHBOARD_URL = "http://207.174.131.61:8889?s=" + BuildConfig.STORE_CODE;
     private static final long RELOAD_INTERVAL_MS = 5 * 60 * 1000;
 
     private FrameLayout root;
@@ -78,7 +78,7 @@ public class MainActivity extends Activity {
                 handler.postDelayed(() -> {
                     splashView.setVisibility(View.GONE);
                     firstLoadDone = true;
-                }, 500);
+                }, 2500);
             }
 
             @Override

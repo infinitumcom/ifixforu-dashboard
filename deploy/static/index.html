@@ -1737,7 +1737,7 @@
 // ============================================================
 const CONFIG = {
   API_BASE: '',
-  STORE_CODE: 'san_gabriel',
+  STORE_CODE: new URLSearchParams(location.search).get('s') || 'san_gabriel',
   REFRESH_INTERVAL: 5000,
   BOTTOM_ROTATE_INTERVAL: 10000,
   QUOTA_SPLIT: { repair: 0.35, activation: 0.35, accessory: 0.20, sales: 0.10 }
