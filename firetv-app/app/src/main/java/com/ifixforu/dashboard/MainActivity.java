@@ -1,7 +1,6 @@
 package com.ifixforu.dashboard;
 
 import android.app.Activity;
-import android.content.ComponentCallbacks2;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.Build;
@@ -26,13 +25,12 @@ public class MainActivity extends Activity {
     private static final long RELOAD_INTERVAL_MS = 5 * 60 * 1000;
 
     private FrameLayout root;
-    private WebView webViewA;
-    private WebView webViewB;
-    private boolean useA = true;          // true = A 在前台
-    private boolean firstLoadDone = false;
+    private WebView webView;
+    private View splashView;
     private TextView errorView;
     private Handler handler;
     private Runnable reloadRunnable;
+    private boolean firstLoadDone = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +41,10 @@ public class MainActivity extends Activity {
         root = new FrameLayout(this);
         root.setBackgroundColor(Color.parseColor("#0a1628"));
 
+        // Splash 覆盖层（轻量 View，不占 WebView 内存）
+        splashView = new View(this);
+        splashView.setBackgroundColor(Color.parseColor("#0a1628"));
+
         errorView = new TextView(this);
         errorView.setTextColor(Color.WHITE);
         errorView.setTextSize(20);
@@ -50,15 +52,13 @@ public class MainActivity extends Activity {
         errorView.setPadding(80, 80, 80, 80);
         errorView.setVisibility(View.GONE);
 
-        // 创建双 WebView
-        webViewA = createWebView();
-        webViewB = createWebView();
-        webViewB.setVisibility(View.INVISIBLE);
+        // 单 WebView — 节省内存
+        webView = createWebView();
 
-        root.addView(webViewA, new FrameLayout.LayoutParams(
+        root.addView(webView, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
-        root.addView(webViewB, new FrameLayout.LayoutParams(
+        root.addView(splashView, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
         root.addView(errorView, new FrameLayout.LayoutParams(
@@ -67,19 +67,33 @@ public class MainActivity extends Activity {
 
         setContentView(root);
 
-        // 先加载 Splash → 立即可见，消除白屏
-        loadSplashScreen(webViewA);
+        // 加载页面
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                if (url == null || url.startsWith("data:") || url.equals("about:blank")) return;
+                errorView.setVisibility(View.GONE);
+                injectHelperScripts(view);
+                // 注入后隐藏 splash
+                handler.postDelayed(() -> {
+                    splashView.setVisibility(View.GONE);
+                    firstLoadDone = true;
+                }, 500);
+            }
 
-        // 再加载真实页面到后台 WebView
-        webViewB.setWebViewClient(createWebViewClient(true));
-        webViewB.loadUrl(DASHBOARD_URL);
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                if (request.isForMainFrame()) {
+                    showError("Cannot connect\n\n" + DASHBOARD_URL + "\n\nRetrying in 10s...");
+                    handler.postDelayed(() -> view.loadUrl(DASHBOARD_URL), 10000);
+                }
+            }
+        });
+        webView.loadUrl(DASHBOARD_URL);
 
         handler = new Handler(Looper.getMainLooper());
         reloadRunnable = () -> {
-            // 在非活跃 WebView 上加载新页面，加载完成后交换
-            WebView background = useA ? webViewB : webViewA;
-            background.setWebViewClient(createWebViewClient(false));
-            background.loadUrl(DASHBOARD_URL);
+            webView.reload();
             handler.postDelayed(reloadRunnable, RELOAD_INTERVAL_MS);
         };
         handler.postDelayed(reloadRunnable, RELOAD_INTERVAL_MS);
@@ -93,13 +107,9 @@ public class MainActivity extends Activity {
         }
     }
 
-    /**
-     * 创建统一配置的 WebView
-     */
     private WebView createWebView() {
         WebView wv = new WebView(this);
         wv.setBackgroundColor(Color.parseColor("#0a1628"));
-        wv.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
         WebSettings settings = wv.getSettings();
         settings.setJavaScriptEnabled(true);
@@ -119,97 +129,13 @@ public class MainActivity extends Activity {
     }
 
     /**
-     * Splash 品牌启动画面 — 内联 HTML，WebView 立即可见
-     */
-    private void loadSplashScreen(WebView wv) {
-        String splashHtml =
-            "<html><head><meta charset='UTF-8'>" +
-            "<style>" +
-            "  body { margin:0; background:#0a1628; display:flex; flex-direction:column;" +
-            "         align-items:center; justify-content:center; height:100vh; font-family:sans-serif; }" +
-            "  .logo { font-size:72px; margin-bottom:30px; }" +
-            "  .title { color:#2D8FFF; font-size:36px; font-weight:700; letter-spacing:4px; margin-bottom:20px; }" +
-            "  .sub { color:#5a7099; font-size:18px; }" +
-            "  .dots { display:flex; gap:8px; margin-top:40px; }" +
-            "  .dot { width:10px; height:10px; border-radius:50%; background:#2D8FFF; opacity:0.3;" +
-            "         animation: pulse 1.2s ease-in-out infinite; }" +
-            "  .dot:nth-child(2) { animation-delay: 0.2s; }" +
-            "  .dot:nth-child(3) { animation-delay: 0.4s; }" +
-            "  @keyframes pulse { 0%,100%{opacity:0.3;transform:scale(1)} 50%{opacity:1;transform:scale(1.3)} }" +
-            "</style></head><body>" +
-            "  <div class='logo'>\uD83D\uDCF1</div>" +
-            "  <div class='title'>iFixForU</div>" +
-            "  <div class='sub'>Operations Dashboard</div>" +
-            "  <div class='dots'><div class='dot'></div><div class='dot'></div><div class='dot'></div></div>" +
-            "</body></html>";
-        wv.loadDataWithBaseURL(null, splashHtml, "text/html", "UTF-8", null);
-    }
-
-    /**
-     * 创建 WebViewClient — 首次加载或刷新共用
-     * @param isFirstLoad true=首次启动（splash→真实页面），false=定时刷新
-     */
-    private WebViewClient createWebViewClient(boolean isFirstLoad) {
-        return new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                if (url == null || url.startsWith("data:") || url.equals("about:blank")) return;
-                errorView.setVisibility(View.GONE);
-                injectHelperScripts(view);
-
-                // 注入完成后交换 WebView
-                handler.postDelayed(() -> {
-                    if (isFirstLoad && !firstLoadDone) {
-                        // 首次加载：把后台 B 切到前台，A（splash）隐藏
-                        firstLoadDone = true;
-                        swapWebViews(webViewB, webViewA);
-                        useA = false;
-                    } else if (!isFirstLoad) {
-                        // 定时刷新：后台 WebView 加载完成，切到前台
-                        WebView foreground = useA ? webViewA : webViewB;
-                        WebView background = useA ? webViewB : webViewA;
-                        if (view == background) {
-                            swapWebViews(background, foreground);
-                            useA = !useA;
-                        }
-                    }
-                }, 300); // 等 300ms 让注入 JS/CSS 生效
-            }
-
-            @Override
-            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (request.isForMainFrame()) {
-                    showError("Cannot connect\n\n" + DASHBOARD_URL + "\n\nRetrying in 10s...");
-                    handler.postDelayed(() -> view.loadUrl(DASHBOARD_URL), 10000);
-                }
-            }
-        };
-    }
-
-    /**
-     * 交换前后台 WebView — 无闪烁切换
-     */
-    private void swapWebViews(WebView toFront, WebView toBack) {
-        toFront.setVisibility(View.VISIBLE);
-        toFront.bringToFront();
-        errorView.bringToFront(); // 保持 errorView 在最上层
-        toBack.setVisibility(View.INVISIBLE);
-    }
-
-    @Override
-    public void onBackPressed() {
-        // 屏蔽返回键，防止误退出
-    }
-
-    /**
      * 注入 CSS/JS 修正竖屏布局 + 修复 API 连接 + 过滤门店
-     * 所有修改通过注入实现，不修改服务器端代码
      */
     private void injectHelperScripts(WebView view) {
         String script =
             "(function() {" +
             "  if (typeof CONFIG !== 'undefined') { CONFIG.API_BASE = 'http://207.174.131.61:8889'; CONFIG.STORE_CODE = '" + BuildConfig.STORE_CODE + "'; CONFIG.REFRESH_INTERVAL = 5000; }" +
-            "  if (typeof MOCK_DATA !== 'undefined') { MOCK_DATA.items = []; MOCK_DATA.notices = []; }" +
+            "  if (typeof MOCK_DATA !== 'undefined') { MOCK_DATA.items = []; MOCK_DATA.notices = []; MOCK_DATA.reviews = {}; }" +
 
             // 2. CSS overrides
             "  var old = document.getElementById('ifixforu-apk-overrides');" +
@@ -218,7 +144,7 @@ public class MainActivity extends Activity {
             "  css.id = 'ifixforu-apk-overrides';" +
             "  css.innerHTML = [" +
             "    '*, *::before, *::after { cursor: none !important; }'," +
-            "    'body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; height: 100vh !important; transform: scale(0.97) !important; transform-origin: center center !important; }'," +
+            "    'body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; height: 100vh !important; transform: scale(0.97)" + ("las_vegas".equals(BuildConfig.STORE_CODE) ? " rotate(180deg)" : "") + " !important; transform-origin: center center !important; }'," +
             "    '#app { animation: none !important; }'," +
             "    '#app {'," +
             "    '  grid-template-rows:'," +
@@ -290,7 +216,7 @@ public class MainActivity extends Activity {
             "    '.review-growth.no-new { font-size: 16px !important; }'," +
             "    '.rv-baseline { font-size: 14px !important; }'," +
 
-            // 6. CSS 动画优化 — GPU 图层提示 + 过渡动画
+            // 6. CSS animation hints
             "    '.rank-bar-fill { transition: width 0.6s ease-out !important; }'," +
             "    '.rev-cat-amount, .stat-amount { transition: opacity 0.3s !important; }'," +
             "    '.rank-bar-item { contain: layout style !important; }'," +
@@ -424,18 +350,15 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    public void onBackPressed() {
+        // 屏蔽返回键，防止误退出
+    }
+
+    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
-            // 手动刷新：在后台 WebView 加载
-            WebView background = useA ? webViewB : webViewA;
-            background.setWebViewClient(createWebViewClient(false));
-            background.loadUrl(DASHBOARD_URL);
-            return true;
-        }
-        if (keyCode == KeyEvent.KEYCODE_MENU) {
-            WebView background = useA ? webViewB : webViewA;
-            background.setWebViewClient(createWebViewClient(false));
-            background.loadUrl(DASHBOARD_URL);
+        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER
+                || keyCode == KeyEvent.KEYCODE_MENU) {
+            webView.reload();
             return true;
         }
         return super.onKeyDown(keyCode, event);
@@ -454,20 +377,9 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    public void onTrimMemory(int level) {
-        super.onTrimMemory(level);
-        if (level >= ComponentCallbacks2.TRIM_MEMORY_MODERATE) {
-            // 低内存时清理非活跃 WebView 的缓存
-            WebView background = useA ? webViewB : webViewA;
-            background.clearCache(false);
-        }
-    }
-
-    @Override
     protected void onDestroy() {
         super.onDestroy();
         if (handler != null) handler.removeCallbacks(reloadRunnable);
-        if (webViewA != null) webViewA.destroy();
-        if (webViewB != null) webViewB.destroy();
+        if (webView != null) webView.destroy();
     }
 }
