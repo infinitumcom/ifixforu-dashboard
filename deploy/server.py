@@ -319,7 +319,7 @@ STORE_TARGETS = {
 STORE_REVIEWS = {
     "san_gabriel": {"google": {"rating": 4.6, "total": 153}, "yelp": {"rating": 4.5, "total": 295}},
     "arcadia_1": {"google": {"rating": 4.5, "total": 142}, "yelp": {"rating": 4.7, "total": 611}},
-    "las_vegas": {"google": {"rating": 4.8, "total": 77}},
+    "las_vegas": {"google": {"rating": 4.8, "total": 366}},
 }
 
 # ── 缓存 ─────────────────────────────────────────────────────
