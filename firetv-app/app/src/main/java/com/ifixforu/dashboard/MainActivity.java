@@ -144,7 +144,7 @@ public class MainActivity extends Activity {
             "  css.id = 'ifixforu-apk-overrides';" +
             "  css.innerHTML = [" +
             "    '*, *::before, *::after { cursor: none !important; }'," +
-            "    'body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; width: 100vw !important; height: 100vh !important; transform:" + ("las_vegas".equals(BuildConfig.STORE_CODE) ? " rotate(180deg)" : "") + " !important; transform-origin: center center !important; }'," +
+            "    'body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; width: 100vw !important; height: 100vh !important; transform:" + ("las_vegas".equals(BuildConfig.STORE_CODE) ? " rotate(180deg)" : ("san_gabriel".equals(BuildConfig.STORE_CODE) ? " scale(0.95)" : "")) + " !important; transform-origin: center center !important; }'," +
             "    '#app { animation: none !important; padding: 6px 10px !important; gap: 4px !important; }'," +
             "    '#app {'," +
             "    '  grid-template-rows:'," +

@@ -25,7 +25,7 @@ check_server() {
         while pgrep -f "python.*server.py" > /dev/null 2>&1; do
             sleep 1
         done
-        cd $DIR && nohup $VENV server.py >> /dev/null 2>&1 &
+        cd $DIR && nohup $VENV server.py >> /dev/null 2>&1 200>&- &
         sleep 3
         # 验证
         RESP2=$(curl -s --max-time 5 http://localhost:8889/api/dashboard?store=san_gabriel)
@@ -57,7 +57,7 @@ check_sg_bot() {
     if [ "$RUNNING" = false ]; then
         echo "$LOG_PREFIX SG bot 未运行，正在启动..."
         rm -f "$PID_FILE"  # 清理残留 PID 文件
-        cd $DIR && nohup $VENV dashboard_bot.py >> /dev/null 2>&1 &
+        cd $DIR && nohup $VENV dashboard_bot.py >> /dev/null 2>&1 200>&- &
         sleep 2
         echo "$LOG_PREFIX SG bot 已启动 (PID: $(cat "$PID_FILE" 2>/dev/null || pgrep -f 'python.*dashboard_bot\.py$'))"
     fi
@@ -82,7 +82,7 @@ check_ar1_bot() {
     if [ "$RUNNING" = false ]; then
         echo "$LOG_PREFIX AR1 bot 未运行，正在启动..."
         rm -f "$PID_FILE"
-        cd $DIR && nohup $VENV dashboard_bot_ar1.py >> /dev/null 2>&1 &
+        cd $DIR && nohup $VENV dashboard_bot_ar1.py >> /dev/null 2>&1 200>&- &
         sleep 2
         echo "$LOG_PREFIX AR1 bot 已启动 (PID: $(cat "$PID_FILE" 2>/dev/null || pgrep -f 'python.*dashboard_bot_ar1\.py$'))"
     fi
@@ -107,7 +107,7 @@ check_lv_bot() {
     if [ "$RUNNING" = false ]; then
         echo "$LOG_PREFIX LV bot 未运行，正在启动..."
         rm -f "$PID_FILE"
-        cd $DIR && nohup $VENV dashboard_bot_lv.py >> /dev/null 2>&1 &
+        cd $DIR && nohup $VENV dashboard_bot_lv.py >> /dev/null 2>&1 200>&- &
         sleep 2
         echo "$LOG_PREFIX LV bot 已启动 (PID: $(cat "$PID_FILE" 2>/dev/null || pgrep -f 'python.*dashboard_bot_lv\.py$'))"
     fi

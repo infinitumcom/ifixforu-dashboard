@@ -26,7 +26,7 @@
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:exported="true"
             android:launchMode="singleTask"
-            android:screenOrientation="unspecified">
+            android:screenOrientation="landscape">
 
             <!-- Standard launcher -->
             <intent-filter>

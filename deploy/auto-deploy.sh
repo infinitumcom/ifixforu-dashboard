@@ -106,27 +106,27 @@ done
 if [ "$CHANGED" -eq 1 ]; then
     echo "$LOG_PREFIX 文件有变动，重启服务..."
 
-    # 重启 server.py（安全停止后再启动）
+    # 重启 server.py（安全停止后再启动，200>&- 关闭锁 FD 防止子进程继承）
     safe_stop "python.*server.py" ""
-    cd $DEPLOY_DIR && nohup $VENV server.py >> /dev/null 2>&1 &
+    cd $DEPLOY_DIR && nohup $VENV server.py >> /dev/null 2>&1 200>&- &
     echo "$LOG_PREFIX server.py 已重启 (PID: $!)"
 
     # 重启 SG bot（清理 PID 文件，安全停止）
     safe_stop 'python.*dashboard_bot\.py$' "dashboard_bot.pid"
     rm -f "$DEPLOY_DIR/dashboard_bot.pid"
-    cd $DEPLOY_DIR && nohup $VENV dashboard_bot.py >> /dev/null 2>&1 &
+    cd $DEPLOY_DIR && nohup $VENV dashboard_bot.py >> /dev/null 2>&1 200>&- &
     echo "$LOG_PREFIX SG bot 已重启 (PID: $!)"
 
     # 重启 AR1 bot
     safe_stop 'python.*dashboard_bot_ar1\.py$' "dashboard_bot_ar1.pid"
     rm -f "$DEPLOY_DIR/dashboard_bot_ar1.pid"
-    cd $DEPLOY_DIR && nohup $VENV dashboard_bot_ar1.py >> /dev/null 2>&1 &
+    cd $DEPLOY_DIR && nohup $VENV dashboard_bot_ar1.py >> /dev/null 2>&1 200>&- &
     echo "$LOG_PREFIX AR1 bot 已重启 (PID: $!)"
 
     # 重启 LV bot
     safe_stop 'python.*dashboard_bot_lv\.py$' "dashboard_bot_lv.pid"
     rm -f "$DEPLOY_DIR/dashboard_bot_lv.pid"
-    cd $DEPLOY_DIR && nohup $VENV dashboard_bot_lv.py >> /dev/null 2>&1 &
+    cd $DEPLOY_DIR && nohup $VENV dashboard_bot_lv.py >> /dev/null 2>&1 200>&- &
     echo "$LOG_PREFIX LV bot 已重启 (PID: $!)"
 
     echo "$LOG_PREFIX 部署完成!"
